@@ -8,7 +8,7 @@ require "fileutils"
 
 class DownLoader
 
-  def run
+  def start
     @file_list = {}
     @stack = []
     @images = {}
@@ -151,5 +151,4 @@ class DownLoader
 end
 
 downloader = DownLoader.new
-downloader.run
-#downloader.mkdir('F:/workspace/test/Background/RepeatingAlarm/res/drawable-hdpi')
+downloader.start
