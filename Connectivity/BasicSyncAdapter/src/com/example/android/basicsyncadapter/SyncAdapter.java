@@ -1,10 +1,11 @@
-
-    
 /*
+ * Copyright 2013 The Android Open Source Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 package com.example.android.basicsyncadapter;
- 
 import android.accounts.Account;
 import android.annotation.TargetApi;
 import android.content.AbstractThreadedSyncAdapter;
@@ -30,11 +29,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.util.Log;
- 
 import com.example.android.basicsyncadapter.net.FeedParser;
 import com.example.android.basicsyncadapter.provider.FeedContract;
- 
- 
+import org.xmlpull.v1.XmlPullParserException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -44,7 +41,6 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
- 
 /**
  * Define a sync adapter for the app.
  *
@@ -56,7 +52,6 @@ import java.util.List;
  */
 class SyncAdapter extends AbstractThreadedSyncAdapter {
     public static final String TAG = "SyncAdapter";
- 
     /**
      * URL to fetch content from during a sync.
      *
@@ -64,20 +59,18 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
      * Android Developer Blog to stay up to date on the latest Android platform developments!)
      */
     private static final String FEED_URL = "http://android-developers.blogspot.com/atom.xml";
- 
     /**
      * Network connection timeout, in milliseconds.
      */
- 
+    private static final int NET_CONNECT_TIMEOUT_MILLIS = 15000;  // 15 seconds
     /**
      * Network read timeout, in milliseconds.
      */
- 
+    private static final int NET_READ_TIMEOUT_MILLIS = 10000;  // 10 seconds
     /**
      * Content resolver, for performing database operations.
      */
     private final ContentResolver mContentResolver;
- 
     /**
      * Project used when querying content provider. Returns all known fields.
      */
@@ -87,9 +80,12 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
             FeedContract.Entry.COLUMN_NAME_TITLE,
             FeedContract.Entry.COLUMN_NAME_LINK,
             FeedContract.Entry.COLUMN_NAME_PUBLISHED};
- 
     // Constants representing column positions from PROJECTION.
- 
+    public static final int COLUMN_ID = 0;
+    public static final int COLUMN_ENTRY_ID = 1;
+    public static final int COLUMN_TITLE = 2;
+    public static final int COLUMN_LINK = 3;
+    public static final int COLUMN_PUBLISHED = 4;
     /**
      * Constructor. Obtains handle to content resolver for later use.
      */
@@ -97,7 +93,6 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
         super(context, autoInitialize);
         mContentResolver = context.getContentResolver();
     }
- 
     /**
      * Constructor. Obtains handle to content resolver for later use.
      */
@@ -106,7 +101,6 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
         super(context, autoInitialize, allowParallelSyncs);
         mContentResolver = context.getContentResolver();
     }
- 
     /**
      * Called by the Android system in response to a request to run the sync adapter. The work
      * required to read data from the network, parse it, and store it in the content provider is
@@ -129,7 +123,6 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
         try {
             final URL location = new URL(FEED_URL);
             InputStream stream = null;
- 
             try {
                 Log.i(TAG, "Streaming data from network: " + location);
                 stream = downloadUrl(location);
@@ -168,7 +161,6 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
         }
         Log.i(TAG, "Network synchronization complete");
     }
- 
     /**
      * Read XML from an input stream, storing it into the content provider.
      *
@@ -181,37 +173,34 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
      * once.
      *
      * <p>Merge strategy:
+     * 1. Get cursor to all items in feed<br/>
+     * 2. For each item, check if it's in the incoming data.<br/>
      *    a. YES: Remove from "incoming" list. Check if data has mutated, if so, perform
      *            database UPDATE.<br/>
      *    b. NO: Schedule DELETE from database.<br/>
      * (At this point, incoming database only contains missing items.)<br/>
+     * 3. For any items remaining in incoming list, ADD to database.
      */
     public void updateLocalFeedData(final InputStream stream, final SyncResult syncResult)
             throws IOException, XmlPullParserException, RemoteException,
             OperationApplicationException, ParseException {
         final FeedParser feedParser = new FeedParser();
         final ContentResolver contentResolver = getContext().getContentResolver();
- 
         Log.i(TAG, "Parsing stream as Atom feed");
         final List<FeedParser.Entry> entries = feedParser.parse(stream);
         Log.i(TAG, "Parsing complete. Found " + entries.size() + " entries");
- 
- 
         ArrayList<ContentProviderOperation> batch = new ArrayList<ContentProviderOperation>();
- 
         // Build hash table of incoming entries
         HashMap<String, FeedParser.Entry> entryMap = new HashMap<String, FeedParser.Entry>();
         for (FeedParser.Entry e : entries) {
             entryMap.put(e.id, e);
         }
- 
         // Get list of all items
         Log.i(TAG, "Fetching local entries for merge");
         Uri uri = FeedContract.Entry.CONTENT_URI; // Get all entries
         Cursor c = contentResolver.query(uri, PROJECTION, null, null, null);
         assert c != null;
         Log.i(TAG, "Found " + c.getCount() + " local entries. Computing merge solution...");
- 
         // Find stale data
         int id;
         String entryId;
@@ -256,7 +245,6 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
             }
         }
         c.close();
- 
         // Add new items
         for (FeedParser.Entry e : entryMap.values()) {
             Log.i(TAG, "Scheduling insert: entry_id=" + e.id);
@@ -277,7 +265,6 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
         // This sample doesn't support uploads, but if *your* code does, make sure you set
         // syncToNetwork=false in the line above to prevent duplicate syncs.
     }
- 
     /**
      * Given a string representation of a URL, sets up a connection and gets an input stream.
      */
@@ -292,4 +279,3 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
         return conn.getInputStream();
     }
 }
-  

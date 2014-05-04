@@ -1,10 +1,11 @@
-
-    
 /*
+ * Copyright 2013 The Android Open Source Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,27 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 /*
  * Modifications:
  * -Imported from AOSP frameworks/base/core/java/com/android/internal/content
  * -Changed package name
  */
- 
 package com.example.android.common.db;
- 
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.text.TextUtils;
 import android.util.Log;
- 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
- 
 /**
  * Helper for building selection clauses for {@link SQLiteDatabase}.
  *
@@ -68,7 +64,9 @@ import java.util.Map;
  *     //        + "LEFT OUTER JOIN rooms ON sessions.room_id=rooms.room_id";
  *
  *     // String Subquery.BLOCK_NUM_STARRED_SESSIONS =
+ *     //       "(SELECT COUNT(1) FROM "
  *     //        + Tables.SESSIONS + " WHERE " + Qualified.SESSIONS_BLOCK_ID + "="
+ *     //        + Qualified.BLOCKS_BLOCK_ID + " AND " + Qualified.SESSIONS_STARRED + "=1)";
  *
  *     String Subqery.BLOCK_SESSIONS_COUNT =
  *     Cursor c = builder.table(Tables.SESSIONS_JOIN_BLOCKS_ROOMS)
@@ -89,12 +87,10 @@ import java.util.Map;
  */
 public class SelectionBuilder {
     private static final String TAG = "basicsyncadapter";
- 
     private String mTable = null;
     private Map<String, String> mProjectionMap = new HashMap<String, String>();
     private StringBuilder mSelection = new StringBuilder();
     private ArrayList<String> mSelectionArgs = new ArrayList<String>();
- 
     /**
      * Reset any internal state, allowing this builder to be recycled.
      *
@@ -104,10 +100,10 @@ public class SelectionBuilder {
      */
     public SelectionBuilder reset() {
         mTable = null;
+        mSelection.setLength(0);
         mSelectionArgs.clear();
         return this;
     }
- 
     /**
      * Append the given selection clause to the internal state. Each clause is
      * surrounded with parenthesis and combined using {@code AND}.
@@ -140,25 +136,22 @@ public class SelectionBuilder {
      */
     public SelectionBuilder where(String selection, String... selectionArgs) {
         if (TextUtils.isEmpty(selection)) {
+            if (selectionArgs != null && selectionArgs.length > 0) {
                 throw new IllegalArgumentException(
                         "Valid selection required when including arguments=");
             }
- 
             // Shortcut when clause is empty
             return this;
         }
- 
+        if (mSelection.length() > 0) {
             mSelection.append(" AND ");
         }
- 
         mSelection.append("(").append(selection).append(")");
         if (selectionArgs != null) {
             Collections.addAll(mSelectionArgs, selectionArgs);
         }
- 
         return this;
     }
- 
     /**
      * Table name to use for SQL {@code FROM} statement.
      *
@@ -176,7 +169,6 @@ public class SelectionBuilder {
         mTable = table;
         return this;
     }
- 
     /**
      * Verify that a table name has been supplied using table().
      *
@@ -187,7 +179,6 @@ public class SelectionBuilder {
             throw new IllegalStateException("Table not specified");
         }
     }
- 
     /**
      * Perform an inner join.
      *
@@ -203,7 +194,6 @@ public class SelectionBuilder {
         mProjectionMap.put(column, table + "." + column);
         return this;
     }
- 
     /**
      * Create a new column based on custom criteria (such as aggregate functions).
      *
@@ -220,7 +210,6 @@ public class SelectionBuilder {
         mProjectionMap.put(fromColumn, toClause + " AS " + fromColumn);
         return this;
     }
- 
     /**
      * Return selection string based on current internal state.
      *
@@ -229,9 +218,7 @@ public class SelectionBuilder {
      */
     public String getSelection() {
         return mSelection.toString();
- 
     }
- 
     /**
      * Return selection arguments based on current internal state.
      *
@@ -240,7 +227,6 @@ public class SelectionBuilder {
     public String[] getSelectionArgs() {
         return mSelectionArgs.toArray(new String[mSelectionArgs.size()]);
     }
- 
     /**
      * Process user-supplied projection (column list).
      *
@@ -255,13 +241,13 @@ public class SelectionBuilder {
      * @param columns User supplied projection (column list).
      */
     private void mapColumns(String[] columns) {
+        for (int i = 0; i < columns.length; i++) {
             final String target = mProjectionMap.get(columns[i]);
             if (target != null) {
                 columns[i] = target;
             }
         }
     }
- 
     /**
      * Return a description of this builder's state. Does NOT output SQL.
      *
@@ -272,7 +258,6 @@ public class SelectionBuilder {
         return "SelectionBuilder[table=" + mTable + ", selection=" + getSelection()
                 + ", selectionArgs=" + Arrays.toString(getSelectionArgs()) + "]";
     }
- 
     /**
      * Execute query (SQL {@code SELECT}) against specified database.
      *
@@ -289,7 +274,6 @@ public class SelectionBuilder {
     public Cursor query(SQLiteDatabase db, String[] columns, String orderBy) {
         return query(db, columns, null, null, orderBy, null);
     }
- 
     /**
      * Execute query ({@code SELECT}) against database.
      *
@@ -320,7 +304,6 @@ public class SelectionBuilder {
         return db.query(mTable, columns, getSelection(), getSelectionArgs(), groupBy, having,
                 orderBy, limit);
     }
- 
     /**
      * Execute an {@code UPDATE} against database.
      *
@@ -334,7 +317,6 @@ public class SelectionBuilder {
         Log.v(TAG, "update() " + this);
         return db.update(mTable, values, getSelection(), getSelectionArgs());
     }
- 
     /**
      * Execute {@code DELETE} against database.
      *
@@ -347,4 +329,3 @@ public class SelectionBuilder {
         return db.delete(mTable, getSelection(), getSelectionArgs());
     }
 }
-  

@@ -1,10 +1,11 @@
-
-    
 /*
+ * Copyright (C) 2012 The Android Open Source Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +14,6 @@
  * limitations under the License.
  */
 package com.example.android.basiccontactables;
- 
 import android.app.Activity;
 import android.app.LoaderManager;
 import android.content.Context;
@@ -25,23 +25,17 @@ import android.os.Bundle;
 import android.provider.ContactsContract.CommonDataKinds;
 import android.util.Log;
 import android.widget.TextView;
- 
 /**
  * Helper class to handle all the callbacks that occur when interacting with loaders.  Most of the
  * interesting code in this sample app will be in this file.
  */
 public class ContactablesLoaderCallbacks implements LoaderManager.LoaderCallbacks<Cursor> {
- 
     Context mContext;
- 
     public static final String QUERY_KEY = "query";
- 
     public static final String TAG = "ContactablesLoaderCallbacks";
- 
     public ContactablesLoaderCallbacks(Context context) {
         mContext = context;
     }
- 
     @Override
     public Loader<Cursor> onCreateLoader(int loaderIndex, Bundle args) {
         // Where the Contactables table excels is matching text queries,
@@ -49,18 +43,14 @@ public class ContactablesLoaderCallbacks implements LoaderManager.LoaderCallback
         // display name, email address and phone number.  In this case, the query was extracted
         // from an incoming intent in the handleIntent() method, via the
         // intent.getStringExtra() method.
- 
         String query = args.getString(QUERY_KEY);
         Uri uri = Uri.withAppendedPath(
                 CommonDataKinds.Contactables.CONTENT_FILTER_URI, query);
- 
- 
         // Easy way to limit the query to contacts with phone numbers.
         String selection =
- 
+                CommonDataKinds.Contactables.HAS_PHONE_NUMBER + " = " + 1;
         // Sort results such that rows for the same contact stay together.
         String sortBy = CommonDataKinds.Contactables.LOOKUP_KEY;
- 
         return new CursorLoader(
                 mContext,  // Context
                 uri,       // URI representing the table/resource to be queried
@@ -69,8 +59,8 @@ public class ContactablesLoaderCallbacks implements LoaderManager.LoaderCallback
                 null,      // selection args - can be provided separately and subbed into selection.
                 sortBy);   // string specifying sort order
     }
- 
     @Override
+    public void onLoadFinished(Loader<Cursor> arg0, Cursor cursor) {
         TextView tv  = (TextView) ((Activity)mContext).findViewById(R.id.sample_output);
         if(tv == null) {
             Log.e(TAG, "TextView is null?!");
@@ -79,13 +69,11 @@ public class ContactablesLoaderCallbacks implements LoaderManager.LoaderCallback
         } else {
             Log.e(TAG, "Nothing is null?!");
         }
- 
         // Reset text in case of a previous query
         tv.setText(mContext.getText(R.string.intro_message) + "\n\n");
- 
+        if (cursor.getCount() == 0) {
             return;
         }
- 
         // Pulling the relevant value from the cursor requires knowing the column index to pull
         // it from.
         int phoneColumnIndex = cursor.getColumnIndex(CommonDataKinds.Phone.NUMBER);
@@ -93,7 +81,6 @@ public class ContactablesLoaderCallbacks implements LoaderManager.LoaderCallback
         int nameColumnIndex = cursor.getColumnIndex(CommonDataKinds.Contactables.DISPLAY_NAME);
         int lookupColumnIndex = cursor.getColumnIndex(CommonDataKinds.Contactables.LOOKUP_KEY);
         int typeColumnIndex = cursor.getColumnIndex(CommonDataKinds.Contactables.MIMETYPE);
- 
         cursor.moveToFirst();
         // Lookup key is the easiest way to verify a row of data is for the same
         // contact as the previous row.
@@ -105,7 +92,6 @@ public class ContactablesLoaderCallbacks implements LoaderManager.LoaderCallback
                 tv.append(displayName + "\n");
                 lookupKey = currentLookupKey;
             }
- 
             // The data type can be determined using the mime type column.
             String mimeType = cursor.getString(typeColumnIndex);
             if (mimeType.equals(CommonDataKinds.Phone.CONTENT_ITEM_TYPE)) {
@@ -113,7 +99,6 @@ public class ContactablesLoaderCallbacks implements LoaderManager.LoaderCallback
             } else if (mimeType.equals(CommonDataKinds.Email.CONTENT_ITEM_TYPE)) {
                 tv.append("\tEmail Address: " + cursor.getString(emailColumnIndex) + "\n");
             }
- 
             // Look at DDMS to see all the columns returned by a query to Contactables.
             // Behold, the firehose!
             for(String column : cursor.getColumnNames()) {
@@ -122,9 +107,7 @@ public class ContactablesLoaderCallbacks implements LoaderManager.LoaderCallback
             }
         } while (cursor.moveToNext());
     }
- 
     @Override
     public void onLoaderReset(Loader<Cursor> cursorLoader) {
     }
 }
-  

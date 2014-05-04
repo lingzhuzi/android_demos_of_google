@@ -1,10 +1,11 @@
-
-    
 /*
+ * Copyright (C) 2008 The Android Open Source Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 package com.example.android.displayingbitmaps.util;
- 
 import android.annotation.TargetApi;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Process;
- 
 import java.util.ArrayDeque;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -35,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
- 
 /**
  * *************************************
  * Copied from JB release framework:
@@ -44,6 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * so that threading behavior on all OS versions is the same and we can tweak behavior by using
  * executeOnExecutor() if needed.
  *
+ * There are 3 changes in this copy of AsyncTask:
  *    -pre-HC a single thread executor is used for serial operation
  *    (Executors.newSingleThreadExecutor) and is the default
  *    -the default THREAD_POOL_EXECUTOR was changed to use DiscardOldestPolicy
@@ -62,15 +60,19 @@ import java.util.concurrent.atomic.AtomicInteger;
  * {@link java.util.concurrent.ThreadPoolExecutor} and {@link java.util.concurrent.FutureTask}.</p>
  *
  * <p>An asynchronous task is defined by a computation that runs on a background thread and
+ * whose result is published on the UI thread. An asynchronous task is defined by 3 generic
  * types, called <code>Params</code>, <code>Progress</code> and <code>Result</code>,
+ * and 4 steps, called <code>onPreExecute</code>, <code>doInBackground</code>,
  * <code>onProgressUpdate</code> and <code>onPostExecute</code>.</p>
  *
  * <div class="special reference">
+ * <h3>Developer Guides</h3>
  * <p>For more information about using tasks and threads, read the
  * <a href="{@docRoot}guide/topics/fundamentals/processes-and-threads.html">Processes and
  * Threads</a> developer guide.</p>
  * </div>
  *
+ * <h2>Usage</h2>
  * <p>AsyncTask must be subclassed to be used. The subclass will override at least
  * one method ({@link #doInBackground}), and most often will override a
  * second one ({@link #onPostExecute}.)</p>
@@ -80,7 +82,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * private class DownloadFilesTask extends AsyncTask&lt;URL, Integer, Long&gt; {
  *     protected Long doInBackground(URL... urls) {
  *         int count = urls.length;
+ *         long totalSize = 0;
+ *         for (int i = 0; i < count; i++) {
  *             totalSize += Downloader.downloadFile(urls[i]);
+ *             publishProgress((int) ((i / (float) count) * 100));
  *             // Escape early if cancel() is called
  *             if (isCancelled()) break;
  *         }
@@ -88,6 +93,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *     }
  *
  *     protected void onProgressUpdate(Integer... progress) {
+ *         setProgressPercent(progress[0]);
  *     }
  *
  *     protected void onPostExecute(Long result) {
@@ -98,8 +104,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * <p>Once created, a task is executed very simply:</p>
  * <pre class="prettyprint">
+ * new DownloadFilesTask().execute(url1, url2, url3);
  * </pre>
  *
+ * <h2>AsyncTask's generic types</h2>
  * <p>The three types used by an asynchronous task are the following:</p>
  * <ol>
  *     <li><code>Params</code>, the type of the parameters sent to the task upon
@@ -115,6 +123,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * private class MyTask extends AsyncTask&lt;Void, Void, Void&gt; { ... }
  * </pre>
  *
+ * <h2>The 4 steps</h2>
+ * <p>When an asynchronous task is executed, the task goes through 4 steps:</p>
  * <ol>
  *     <li>{@link #onPreExecute()}, invoked on the UI thread immediately after the task
  *     is executed. This step is normally used to setup the task, for instance by
@@ -137,6 +147,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *     this step as a parameter.</li>
  * </ol>
  *
+ * <h2>Cancelling a task</h2>
  * <p>A task can be cancelled at any time by invoking {@link #cancel(boolean)}. Invoking
  * this method will cause subsequent calls to {@link #isCancelled()} to return true.
  * After invoking this method, {@link #onCancelled(Object)}, instead of
@@ -145,6 +156,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * check the return value of {@link #isCancelled()} periodically from
  * {@link #doInBackground(Object[])}, if possible (inside a loop for instance.)</p>
  *
+ * <h2>Threading rules</h2>
  * <p>There are a few threading rules that must be followed for this class to
  * work properly:</p>
  * <ul>
@@ -158,6 +170,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *     a second execution is attempted.)</li>
  * </ul>
  *
+ * <h2>Memory observability</h2>
  * <p>AsyncTask guarantees that all callback calls are synchronized in such a way that the following
  * operations are safe without explicit synchronizations.</p>
  * <ul>
@@ -167,6 +180,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *     {@link #onProgressUpdate} and {@link #onPostExecute}.
  * </ul>
  *
+ * <h2>Order of execution</h2>
  * <p>When first introduced, AsyncTasks were executed serially on a single background
  * thread. Starting with {@link android.os.Build.VERSION_CODES#DONUT}, this was changed
  * to a pool of threads allowing multiple tasks to operate in parallel. Starting with
@@ -178,17 +192,17 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class AsyncTask<Params, Progress, Result> {
     private static final String LOG_TAG = "AsyncTask";
- 
- 
+    private static final int CORE_POOL_SIZE = 5;
+    private static final int MAXIMUM_POOL_SIZE = 128;
+    private static final int KEEP_ALIVE = 1;
     private static final ThreadFactory  sThreadFactory = new ThreadFactory() {
- 
+        private final AtomicInteger mCount = new AtomicInteger(1);
         public Thread newThread(Runnable r) {
             return new Thread(r, "AsyncTask #" + mCount.getAndIncrement());
         }
     };
- 
     private static final BlockingQueue<Runnable> sPoolWorkQueue =
- 
+            new LinkedBlockingQueue<Runnable>(10);
     /**
      * An {@link java.util.concurrent.Executor} that can be used to execute tasks in parallel.
      */
@@ -196,32 +210,27 @@ public abstract class AsyncTask<Params, Progress, Result> {
             = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE,
             TimeUnit.SECONDS, sPoolWorkQueue, sThreadFactory,
             new ThreadPoolExecutor.DiscardOldestPolicy());
- 
     /**
      * An {@link java.util.concurrent.Executor} that executes tasks one at a time in serial
      * order.  This serialization is global to a particular process.
      */
     public static final Executor SERIAL_EXECUTOR = Utils.hasHoneycomb() ? new SerialExecutor() :
             Executors.newSingleThreadExecutor(sThreadFactory);
- 
     public static final Executor DUAL_THREAD_EXECUTOR =
- 
- 
+            Executors.newFixedThreadPool(2, sThreadFactory);
+    private static final int MESSAGE_POST_RESULT = 0x1;
+    private static final int MESSAGE_POST_PROGRESS = 0x2;
     private static final InternalHandler sHandler = new InternalHandler();
- 
     private static volatile Executor sDefaultExecutor = SERIAL_EXECUTOR;
     private final WorkerRunnable<Params, Result> mWorker;
     private final FutureTask<Result> mFuture;
- 
     private volatile Status mStatus = Status.PENDING;
- 
     private final AtomicBoolean mCancelled = new AtomicBoolean();
     private final AtomicBoolean mTaskInvoked = new AtomicBoolean();
- 
+    @TargetApi(11)
     private static class SerialExecutor implements Executor {
         final ArrayDeque<Runnable> mTasks = new ArrayDeque<Runnable>();
         Runnable mActive;
- 
         public synchronized void execute(final Runnable r) {
             mTasks.offer(new Runnable() {
                 public void run() {
@@ -236,14 +245,12 @@ public abstract class AsyncTask<Params, Progress, Result> {
                 scheduleNext();
             }
         }
- 
         protected synchronized void scheduleNext() {
             if ((mActive = mTasks.poll()) != null) {
                 THREAD_POOL_EXECUTOR.execute(mActive);
             }
         }
     }
- 
     /**
      * Indicates the current status of the task. Each status will be set only once
      * during the lifetime of a task.
@@ -262,17 +269,14 @@ public abstract class AsyncTask<Params, Progress, Result> {
          */
         FINISHED,
     }
- 
     /** @hide Used to force static handler to be created. */
     public static void init() {
         sHandler.getLooper();
     }
- 
     /** @hide */
     public static void setDefaultExecutor(Executor exec) {
         sDefaultExecutor = exec;
     }
- 
     /**
      * Creates a new asynchronous task. This constructor must be invoked on the UI thread.
      */
@@ -280,13 +284,11 @@ public abstract class AsyncTask<Params, Progress, Result> {
         mWorker = new WorkerRunnable<Params, Result>() {
             public Result call() throws Exception {
                 mTaskInvoked.set(true);
- 
                 Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
                 //noinspection unchecked
                 return postResult(doInBackground(mParams));
             }
         };
- 
         mFuture = new FutureTask<Result>(mWorker) {
             @Override
             protected void done() {
@@ -303,14 +305,12 @@ public abstract class AsyncTask<Params, Progress, Result> {
             }
         };
     }
- 
     private void postResultIfNotInvoked(Result result) {
         final boolean wasTaskInvoked = mTaskInvoked.get();
         if (!wasTaskInvoked) {
             postResult(result);
         }
     }
- 
     private Result postResult(Result result) {
         @SuppressWarnings("unchecked")
         Message message = sHandler.obtainMessage(MESSAGE_POST_RESULT,
@@ -318,7 +318,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
         message.sendToTarget();
         return result;
     }
- 
     /**
      * Returns the current status of this task.
      *
@@ -327,7 +326,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
     public final Status getStatus() {
         return mStatus;
     }
- 
     /**
      * Override this method to perform a computation on a background thread. The
      * specified parameters are the parameters passed to {@link #execute}
@@ -345,7 +343,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
      * @see #publishProgress
      */
     protected abstract Result doInBackground(Params... params);
- 
     /**
      * Runs on the UI thread before {@link #doInBackground}.
      *
@@ -354,7 +351,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
      */
     protected void onPreExecute() {
     }
- 
     /**
      * <p>Runs on the UI thread after {@link #doInBackground}. The
      * specified result is the value returned by {@link #doInBackground}.</p>
@@ -370,7 +366,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
     @SuppressWarnings({"UnusedDeclaration"})
     protected void onPostExecute(Result result) {
     }
- 
     /**
      * Runs on the UI thread after {@link #publishProgress} is invoked.
      * The specified values are the values passed to {@link #publishProgress}.
@@ -383,7 +378,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
     @SuppressWarnings({"UnusedDeclaration"})
     protected void onProgressUpdate(Progress... values) {
     }
- 
     /**
      * <p>Runs on the UI thread after {@link #cancel(boolean)} is invoked and
      * {@link #doInBackground(Object[])} has finished.</p>
@@ -402,7 +396,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
     protected void onCancelled(Result result) {
         onCancelled();
     }
- 
     /**
      * <p>Applications should preferably override {@link #onCancelled(Object)}.
      * This method is invoked by the default implementation of
@@ -417,7 +410,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
      */
     protected void onCancelled() {
     }
- 
     /**
      * Returns <tt>true</tt> if this task was cancelled before it completed
      * normally. If you are calling {@link #cancel(boolean)} on the task,
@@ -431,7 +423,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
     public final boolean isCancelled() {
         return mCancelled.get();
     }
- 
     /**
      * <p>Attempts to cancel execution of this task.  This attempt will
      * fail if the task has already completed, already been cancelled,
@@ -465,7 +456,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
         mCancelled.set(true);
         return mFuture.cancel(mayInterruptIfRunning);
     }
- 
     /**
      * Waits if necessary for the computation to complete, and then
      * retrieves its result.
@@ -480,7 +470,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
     public final Result get() throws InterruptedException, ExecutionException {
         return mFuture.get();
     }
- 
     /**
      * Waits if necessary for at most the given time for the computation
      * to complete, and then retrieves its result.
@@ -500,7 +489,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
             ExecutionException, TimeoutException {
         return mFuture.get(timeout, unit);
     }
- 
     /**
      * Executes the task with the specified parameters. The task returns
      * itself (this) so that the caller can keep a reference to it.
@@ -532,7 +520,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
     public final AsyncTask<Params, Progress, Result> execute(Params... params) {
         return executeOnExecutor(sDefaultExecutor, params);
     }
- 
     /**
      * Executes the task with the specified parameters. The task returns
      * itself (this) so that the caller can keep a reference to it.
@@ -579,17 +566,12 @@ public abstract class AsyncTask<Params, Progress, Result> {
                             + "(a task can be executed only once)");
             }
         }
- 
         mStatus = Status.RUNNING;
- 
         onPreExecute();
- 
         mWorker.mParams = params;
         exec.execute(mFuture);
- 
         return this;
     }
- 
     /**
      * Convenience version of {@link #execute(Object...)} for use with
      * a simple Runnable object. See {@link #execute(Object[])} for more
@@ -601,7 +583,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
     public static void execute(Runnable runnable) {
         sDefaultExecutor.execute(runnable);
     }
- 
     /**
      * This method can be invoked from {@link #doInBackground} to
      * publish updates on the UI thread while the background computation is
@@ -622,7 +603,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
                     new AsyncTaskResult<Progress>(this, values)).sendToTarget();
         }
     }
- 
     private void finish(Result result) {
         if (isCancelled()) {
             onCancelled(result);
@@ -631,7 +611,6 @@ public abstract class AsyncTask<Params, Progress, Result> {
         }
         mStatus = Status.FINISHED;
     }
- 
     private static class InternalHandler extends Handler {
         @SuppressWarnings({"unchecked", "RawUseOfParameterizedType"})
         @Override
@@ -640,6 +619,7 @@ public abstract class AsyncTask<Params, Progress, Result> {
             switch (msg.what) {
                 case MESSAGE_POST_RESULT:
                     // There is only one result
+                    result.mTask.finish(result.mData[0]);
                     break;
                 case MESSAGE_POST_PROGRESS:
                     result.mTask.onProgressUpdate(result.mData);
@@ -647,20 +627,16 @@ public abstract class AsyncTask<Params, Progress, Result> {
             }
         }
     }
- 
     private static abstract class WorkerRunnable<Params, Result> implements Callable<Result> {
         Params[] mParams;
     }
- 
     @SuppressWarnings({"RawUseOfParameterizedType"})
     private static class AsyncTaskResult<Data> {
         final AsyncTask mTask;
         final Data[] mData;
- 
         AsyncTaskResult(AsyncTask task, Data... data) {
             mTask = task;
             mData = data;
         }
     }
 }
-  

@@ -445,10 +445,10 @@ onkeyup="return search_changed(event, false, '/')" />
   <div class="sum-details-links">
 
   <!-- related links -->
-  <a href="/samples/DoneBar/index.html">Overview</a>
-  &#124; <a href="/samples/DoneBar/project.html">Project</a>
-  &#124; <a href="/downloads/samples/DoneBar.zip"
-    onclick="_gaq.push(['_trackEvent', 'Samples', 'Download', DoneBar]);"
+  <a href="/samples/SwipeRefreshMultipleViews/index.html">Overview</a>
+  &#124; <a href="/samples/SwipeRefreshMultipleViews/project.html">Project</a>
+  &#124; <a href="/downloads/samples/SwipeRefreshMultipleViews.zip"
+    onclick="_gaq.push(['_trackEvent', 'Samples', 'Download', SwipeRefreshMultipleViews]);"
     >Download</a>
 
 </div><!-- end sum-details-links -->
@@ -459,7 +459,7 @@ onkeyup="return search_changed(event, false, '/')" />
 
 <div id="pathCrumb">
 
-  DoneBar / 
+  SwipeRefreshMultipleViews / 
 
   res / 
 

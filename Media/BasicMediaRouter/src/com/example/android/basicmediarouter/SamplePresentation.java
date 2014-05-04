@@ -1,10 +1,11 @@
-
-    
 /*
+ * Copyright 2013 The Android Open Source Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,16 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 package com.example.android.basicmediarouter;
- 
 import android.app.Presentation;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.Display;
 import android.widget.LinearLayout;
 import android.widget.TextView;
- 
 /**
  * <p>
  * A {@link android.app.Presentation} used to demonstrate interaction between primary and
@@ -34,25 +32,19 @@ import android.widget.TextView;
  * </p>
  */
 public class SamplePresentation extends Presentation {
- 
     private LinearLayout mLayout;
     private TextView mText;
- 
     public SamplePresentation(Context outerContext, Display display) {
         super(outerContext, display);
     }
- 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
- 
         // Set the content view to the custom layout
         setContentView(R.layout.display);
- 
         // Get the Views
         mLayout = (LinearLayout) findViewById(R.id.display_layout);
         mText = (TextView) findViewById(R.id.display_text);
- 
         /*
          * Show the name of the display this presentation was embedded in.
          */
@@ -60,7 +52,6 @@ public class SamplePresentation extends Presentation {
         final String name = getDisplay().getName();
         smallText.setText(getResources().getString(R.string.display_name, name));
     }
- 
     /**
      * Set the background color of the layout and display the color as a String.
      *
@@ -68,11 +59,8 @@ public class SamplePresentation extends Presentation {
      */
     public void setColor(int color) {
         mLayout.setBackgroundColor(color);
- 
         // Display the color as a string on screen
         String s = getResources().getString(R.string.display_color, color);
         mText.setText(s);
     }
- 
 }
-  

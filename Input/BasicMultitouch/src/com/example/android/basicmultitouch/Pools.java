@@ -1,10 +1,11 @@
-
-    
 /*
+ * Copyright (C) 2009 The Android Open Source Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 package com.example.android.basicmultitouch;
- 
 /**
  * Helper class for crating pools of objects. An example use looks like this:
  * <pre>
  * public class MyPooledClass {
  *
  *     private static final SynchronizedPool<MyPooledClass> sPool =
+ *             new SynchronizedPool<MyPooledClass>(10);
  *
  *     public static MyPooledClass obtain() {
  *         MyPooledClass instance = sPool.acquire();
@@ -39,19 +39,16 @@ package com.example.android.basicmultitouch;
  * @hide
  */
 public final class Pools {
- 
     /**
      * Interface for managing a pool of objects.
      *
      * @param <T> The pooled type.
      */
     public static interface Pool<T> {
- 
         /**
          * @return An instance from the pool if such, null otherwise.
          */
         public T acquire();
- 
         /**
          * Release an instance to the pool.
          *
@@ -62,11 +59,9 @@ public final class Pools {
          */
         public boolean release(T instance);
     }
- 
     private Pools() {
         /* do nothing - hiding constructor */
     }
- 
     /**
      * Simple (non-synchronized) pool of objects.
      *
@@ -74,9 +69,7 @@ public final class Pools {
      */
     public static class SimplePool<T> implements Pool<T> {
         private final Object[] mPool;
- 
         private int mPoolSize;
- 
         /**
          * Creates a new instance.
          *
@@ -85,13 +78,16 @@ public final class Pools {
          * @throws IllegalArgumentException If the max pool size is less than zero.
          */
         public SimplePool(int maxPoolSize) {
+            if (maxPoolSize <= 0) {
+                throw new IllegalArgumentException("The max pool size must be > 0");
             }
             mPool = new Object[maxPoolSize];
         }
- 
         @Override
         @SuppressWarnings("unchecked")
         public T acquire() {
+            if (mPoolSize > 0) {
+                final int lastPooledIndex = mPoolSize - 1;
                 T instance = (T) mPool[lastPooledIndex];
                 mPool[lastPooledIndex] = null;
                 mPoolSize--;
@@ -99,7 +95,6 @@ public final class Pools {
             }
             return null;
         }
- 
         @Override
         public boolean release(T instance) {
             if (isInPool(instance)) {
@@ -112,8 +107,8 @@ public final class Pools {
             }
             return false;
         }
- 
         private boolean isInPool(T instance) {
+            for (int i = 0; i < mPoolSize; i++) {
                 if (mPool[i] == instance) {
                     return true;
                 }
@@ -121,7 +116,6 @@ public final class Pools {
             return false;
         }
     }
- 
     /**
      * Synchronized) pool of objects.
      *
@@ -129,7 +123,6 @@ public final class Pools {
      */
     public static class SynchronizedPool<T> extends SimplePool<T> {
         private final Object mLock = new Object();
- 
         /**
          * Creates a new instance.
          *
@@ -140,14 +133,12 @@ public final class Pools {
         public SynchronizedPool(int maxPoolSize) {
             super(maxPoolSize);
         }
- 
         @Override
         public T acquire() {
             synchronized (mLock) {
                 return super.acquire();
             }
         }
- 
         @Override
         public boolean release(T element) {
             synchronized (mLock) {
@@ -156,4 +147,3 @@ public final class Pools {
         }
     }
 }
-  

@@ -1,18 +1,15 @@
-
-    
 <!--
- 
+Copyright (C) 2013 The Android Open Source Project
+Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
- 
- 
+     http://www.apache.org/licenses/LICENSE-2.0
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
- 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
@@ -31,7 +28,6 @@ limitations under the License.
                 android:paddingBottom="@dimen/activity_vertical_margin"
                 tools:context=".MainActivity"
                 >
- 
             <!-- Notice the presence of nextFocusDown/nextFocusUp on the elements below. You can
             also use nextFocusLeft/nextFocusRight. This tells the system in what order elements
             should be navigated through. If not present, the system will make a guess based on
@@ -44,7 +40,6 @@ limitations under the License.
                     android:layout_alignParentTop="true"
                     android:layout_alignParentLeft="true"
                     android:nextFocusDown="@+id/composeButton"/>
- 
             <!-- This is a regular, text-based button. No contentDescription is needed, since the
                  text field sufficiently describes the action performed. -->
             <Button
@@ -57,9 +52,7 @@ limitations under the License.
                     android:nextFocusUp="@+id/buttonsLabel"
                     android:nextFocusDown="@+id/checkboxesLabel"
                     />
- 
             <!-- The next two buttons are different types of image-based buttons. -->
- 
             <!-- Adding a contentDescription is needed for accessibility, since no text is present.
             Since the contentDescription is read verbatim, you may want to be a bit more
             descriptive than usual, such as adding "button" to the end of your description, if
@@ -77,7 +70,6 @@ limitations under the License.
                     android:nextFocusUp="@+id/buttonsLabel"
                     android:nextFocusDown="@+id/checkboxesLabel"
                     />
- 
             <ImageButton
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -89,11 +81,11 @@ limitations under the License.
                     android:layout_alignRight="@+id/hyperspaceCheckbox"
                     android:scaleType="fitCenter"
                     android:background="?android:selectableItemBackground"
+                    android:padding="5dp"
                     android:contentDescription="@string/infoButtonDescription"
                     android:nextFocusUp="@+id/buttonsLabel"
                     android:nextFocusDown="@+id/checkboxesLabel"
             />
- 
             <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -104,7 +96,6 @@ limitations under the License.
                     android:nextFocusUp="@+id/composeButton"
                     android:nextFocusDown="@+id/jetpackCheckbox"
                     />
- 
             <!-- Like a text-based button, checkboxes with text will often work correctly as-is.
                  If your checkboxes do not have a text attribute, you will need to add a
                  contentDescriptoin. -->
@@ -119,7 +110,6 @@ limitations under the License.
                     android:nextFocusUp="@+id/checkboxesLabel"
                     android:nextFocusDown="@+id/hyperspaceCheckbox"
                     />
- 
             <CheckBox
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -131,7 +121,6 @@ limitations under the License.
                     android:nextFocusUp="@+id/jetpackCheckbox"
                     android:nextFocusDown="@+id/imagesAndTextLabel"
                     />
- 
             <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -142,7 +131,6 @@ limitations under the License.
                     android:nextFocusUp="@+id/hyperspaceCheckbox"
                     android:nextFocusDown="@+id/partlyCloudImage"
                     />
- 
             <!-- Images should have a contentDescription if they convey any meaningful
                  information. Images that are purely decorative may not need a contentDescription,
                  however. -->
@@ -158,13 +146,13 @@ limitations under the License.
                     android:nextFocusUp="@+id/imagesAndTextLabel"
                     android:nextFocusDown="@+id/customViewLabel"
                     />
- 
             <!-- TextViews are typically self describing, so do not need extra modifications. -->
             <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceLarge"
                     android:text="@string/temperature"
+                    android:textSize="60sp"
                     android:id="@+id/temperatureText"
                     android:layout_alignTop="@+id/partlyCloudyImage"
                     android:layout_toRightOf="@+id/partlyCloudyImage"
@@ -173,7 +161,6 @@ limitations under the License.
                     android:nextFocusUp="@+id/imagesAndTextLabel"
                     android:nextFocusDown="@+id/customViewLabel"
                     />
- 
             <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -184,17 +171,16 @@ limitations under the License.
                     android:nextFocusUp="@+id/partlyCloudImage"
                     android:nextFocusDown="@+id/dialView"
                     />
- 
             <!-- Custom views require additonal code changes. See DialView.java for more
                  details. -->
             <com.example.android.basicaccessibility.DialView
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
                     android:id="@+id/dialView"
                     android:layout_below="@+id/customViewLabel"
                     android:layout_alignLeft="@+id/partlyCloudyImage"
                     android:nextFocusUp="@+id/customViewLabel"
                     />
- 
         </RelativeLayout>
     </ScrollView>
 </LinearLayout>
-  

@@ -1,10 +1,11 @@
-
-    
 /*
+ * Copyright (C) 2013 The Android Open Source Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,18 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 package com.example.android.mediarouter.player;
- 
 import android.app.PendingIntent;
 import android.net.Uri;
+import android.support.v7.media.MediaItemStatus;
+import android.support.v7.media.MediaSessionStatus;
 import android.util.Log;
- 
 import com.example.android.mediarouter.player.Player.Callback;
- 
 import java.util.ArrayList;
 import java.util.List;
- 
 /**
  * SessionManager manages a media session as a queue. It supports common
  * queuing behaviors such as enqueue/remove of media items, pause/resume/stop,
@@ -35,7 +33,6 @@ import java.util.List;
 public class SessionManager implements Callback {
     private static final String TAG = "SessionManager";
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
- 
     private String mName;
     private int mSessionId;
     private int mItemId;
@@ -44,33 +41,27 @@ public class SessionManager implements Callback {
     private Player mPlayer;
     private Callback mCallback;
     private List<PlaylistItem> mPlaylist = new ArrayList<PlaylistItem>();
- 
     public SessionManager(String name) {
         mName = name;
     }
- 
     public boolean hasSession() {
         return mSessionValid;
     }
- 
     public String getSessionId() {
         return mSessionValid ? Integer.toString(mSessionId) : null;
     }
- 
     public PlaylistItem getCurrentItem() {
+        return mPlaylist.isEmpty() ? null : mPlaylist.get(0);
     }
- 
     // Get the cached statistic info from the player (will not update it)
     public String getStatistics() {
         checkPlayer();
         return mPlayer.getStatistics();
     }
- 
     // Returns the cached playlist (note this is not responsible for updating it)
     public List<PlaylistItem> getPlaylist() {
         return mPlaylist;
     }
- 
     // Updates the playlist asynchronously, calls onPlaylistReady() when finished.
     public void updateStatus() {
         if (DEBUG) {
@@ -80,14 +71,16 @@ public class SessionManager implements Callback {
         // update the statistics first, so that the stats string is valid when
         // onPlaylistReady() gets called in the end
         mPlayer.updateStatistics();
- 
         if (mPlaylist.isEmpty()) {
             // If queue is empty, don't forget to call onPlaylistReady()!
             onPlaylistReady();
         } else if (mPlayer.isQueuingSupported()) {
             // If player supports queuing, get status of each item. Player is
             // responsible to call onPlaylistReady() after last getStatus().
+            // (update=1 requires player to callback onPlaylistReady())
+            for (int i = 0; i < mPlaylist.size(); i++) {
                 PlaylistItem item = mPlaylist.get(i);
+                mPlayer.getStatus(item, (i == mPlaylist.size() - 1) /* update */);
             }
         } else {
             // Otherwise, only need to get status for current item. Player is
@@ -95,11 +88,9 @@ public class SessionManager implements Callback {
             mPlayer.getStatus(getCurrentItem(), true /* update */);
         }
     }
- 
     public PlaylistItem add(Uri uri, String mime) {
         return add(uri, mime, null);
     }
- 
     public PlaylistItem add(Uri uri, String mime, PendingIntent receiver) {
         if (DEBUG) {
             log("add: uri=" + uri + ", receiver=" + receiver);
@@ -107,13 +98,11 @@ public class SessionManager implements Callback {
         // create new session if needed
         startSession();
         checkPlayerAndSession();
- 
         // append new item with initial status PLAYBACK_STATE_PENDING
         PlaylistItem item = new PlaylistItem(
                 Integer.toString(mSessionId), Integer.toString(mItemId), uri, mime, receiver);
         mPlaylist.add(item);
         mItemId++;
- 
         // if player supports queuing, enqueue the item now
         if (mPlayer.isQueuingSupported()) {
             mPlayer.enqueue(item);
@@ -121,7 +110,6 @@ public class SessionManager implements Callback {
         updatePlaybackState();
         return item;
     }
- 
     public PlaylistItem remove(String iid) {
         if (DEBUG) {
             log("remove: iid=" + iid);
@@ -129,7 +117,6 @@ public class SessionManager implements Callback {
         checkPlayerAndSession();
         return removeItem(iid, MediaItemStatus.PLAYBACK_STATE_CANCELED);
     }
- 
     public PlaylistItem seek(String iid, long pos) {
         if (DEBUG) {
             log("seek: iid=" + iid +", pos=" + pos);
@@ -137,7 +124,6 @@ public class SessionManager implements Callback {
         checkPlayerAndSession();
         // seeking on pending items are not yet supported
         checkItemCurrent(iid);
- 
         PlaylistItem item = getCurrentItem();
         if (pos != item.getPosition()) {
             item.setPosition(pos);
@@ -148,17 +134,14 @@ public class SessionManager implements Callback {
         }
         return item;
     }
- 
     public PlaylistItem getStatus(String iid) {
         checkPlayerAndSession();
- 
         // This should only be called for local player. Remote player is
         // asynchronous, need to use updateStatus() instead.
         if (mPlayer.isRemotePlayback()) {
             throw new IllegalStateException(
                     "getStatus should not be called on remote player!");
         }
- 
         for (PlaylistItem item : mPlaylist) {
             if (item.getItemId().equals(iid)) {
                 if (item == getCurrentItem()) {
@@ -169,7 +152,6 @@ public class SessionManager implements Callback {
         }
         return null;
     }
- 
     public void pause() {
         if (DEBUG) {
             log("pause");
@@ -177,7 +159,6 @@ public class SessionManager implements Callback {
         mPaused = true;
         updatePlaybackState();
     }
- 
     public void resume() {
         if (DEBUG) {
             log("resume");
@@ -185,7 +166,6 @@ public class SessionManager implements Callback {
         mPaused = false;
         updatePlaybackState();
     }
- 
     public void stop() {
         if (DEBUG) {
             log("stop");
@@ -195,17 +175,16 @@ public class SessionManager implements Callback {
         mPaused = false;
         updateStatus();
     }
- 
     public String startSession() {
         if (!mSessionValid) {
             mSessionId++;
+            mItemId = 0;
             mPaused = false;
             mSessionValid = true;
             return Integer.toString(mSessionId);
         }
         return null;
     }
- 
     public boolean endSession() {
         if (mSessionValid) {
             mSessionValid = false;
@@ -213,23 +192,21 @@ public class SessionManager implements Callback {
         }
         return false;
     }
- 
     public MediaSessionStatus getSessionStatus(String sid) {
         int sessionState = (sid != null && sid.equals(mSessionId)) ?
                 MediaSessionStatus.SESSION_STATE_ACTIVE :
                     MediaSessionStatus.SESSION_STATE_INVALIDATED;
- 
         return new MediaSessionStatus.Builder(sessionState)
                 .setQueuePaused(mPaused)
                 .build();
     }
- 
     // Suspend the playback manager. Put the current item back into PENDING
     // state, and remember the current playback position. Called when switching
     // to a different player (route).
     public void suspend(long pos) {
         for (PlaylistItem item : mPlaylist) {
             item.setRemoteItemId(null);
+            item.setDuration(0);
         }
         PlaylistItem item = getCurrentItem();
         if (DEBUG) {
@@ -243,7 +220,6 @@ public class SessionManager implements Callback {
             }
         }
     }
- 
     // Unsuspend the playback manager. Restart playback on new player (route).
     // This will resume playback of current item. Furthermore, if the new player
     // supports queuing, playlist will be re-established on the remote player.
@@ -258,24 +234,20 @@ public class SessionManager implements Callback {
         }
         updatePlaybackState();
     }
- 
     // Player.Callback
     @Override
     public void onError() {
         finishItem(true);
     }
- 
     @Override
     public void onCompletion() {
         finishItem(false);
     }
- 
     @Override
     public void onPlaylistChanged() {
         // Playlist has changed, update the cached playlist
         updateStatus();
     }
- 
     @Override
     public void onPlaylistReady() {
         // Notify activity to update Ui
@@ -283,35 +255,29 @@ public class SessionManager implements Callback {
             mCallback.onStatusChanged();
         }
     }
- 
     private void log(String message) {
         Log.d(TAG, mName + ": " + message);
     }
- 
     private void checkPlayer() {
         if (mPlayer == null) {
             throw new IllegalStateException("Player not set!");
         }
     }
- 
     private void checkSession() {
         if (!mSessionValid) {
             throw new IllegalStateException("Session not set!");
         }
     }
- 
     private void checkPlayerAndSession() {
         checkPlayer();
         checkSession();
     }
- 
     private void checkItemCurrent(String iid) {
         PlaylistItem item = getCurrentItem();
         if (item == null || !item.getItemId().equals(iid)) {
             throw new IllegalArgumentException("Item is not current!");
         }
     }
- 
     private void updatePlaybackState() {
         PlaylistItem item = getCurrentItem();
         if (item != null) {
@@ -335,7 +301,6 @@ public class SessionManager implements Callback {
         }
         updateStatus();
     }
- 
     private PlaylistItem removeItem(String iid, int state) {
         checkPlayerAndSession();
         List<PlaylistItem> queue =
@@ -367,7 +332,6 @@ public class SessionManager implements Callback {
         }
         return found;
     }
- 
     private void finishItem(boolean error) {
         PlaylistItem item = getCurrentItem();
         if (item != null) {
@@ -377,19 +341,16 @@ public class SessionManager implements Callback {
             updateStatus();
         }
     }
- 
     // set the Player that this playback manager will interact with
     public void setPlayer(Player player) {
         mPlayer = player;
         checkPlayer();
         mPlayer.setCallback(this);
     }
- 
     // provide a callback interface to tell the UI when significant state changes occur
     public void setCallback(Callback callback) {
         mCallback = callback;
     }
- 
     @Override
     public String toString() {
         String result = "Media Queue: ";
@@ -402,10 +363,8 @@ public class SessionManager implements Callback {
         }
         return result;
     }
- 
     public interface Callback {
         void onStatusChanged();
         void onItemChanged(PlaylistItem item);
     }
 }
-  

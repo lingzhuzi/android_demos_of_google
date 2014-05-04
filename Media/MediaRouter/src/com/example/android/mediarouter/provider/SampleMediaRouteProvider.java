@@ -1,10 +1,11 @@
-
-    
 /*
+ * Copyright (C) 2013 The Android Open Source Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 package com.example.android.mediarouter.provider;
- 
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -25,15 +24,18 @@ import android.media.AudioManager;
 import android.media.MediaRouter;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v7.media.MediaControlIntent;
+import android.support.v7.media.MediaRouteDescriptor;
+import android.support.v7.media.MediaRouteProvider;
+import android.support.v7.media.MediaRouteProviderDescriptor;
+import android.support.v7.media.MediaRouter.ControlRequestCallback;
+import android.support.v7.media.MediaSessionStatus;
 import android.util.Log;
- 
 import com.example.android.mediarouter.player.Player;
 import com.example.android.mediarouter.player.PlaylistItem;
 import com.example.android.mediarouter.R;
 import com.example.android.mediarouter.player.SessionManager;
- 
 import java.util.ArrayList;
- 
 /**
  * Demonstrates how to create a custom media route provider.
  *
@@ -41,19 +43,17 @@ import java.util.ArrayList;
  */
 public final class SampleMediaRouteProvider extends MediaRouteProvider {
     private static final String TAG = "SampleMediaRouteProvider";
- 
     private static final String FIXED_VOLUME_ROUTE_ID = "fixed";
     private static final String VARIABLE_VOLUME_BASIC_ROUTE_ID = "variable_basic";
     private static final String VARIABLE_VOLUME_QUEUING_ROUTE_ID = "variable_queuing";
     private static final String VARIABLE_VOLUME_SESSION_ROUTE_ID = "variable_session";
- 
+    private static final int VOLUME_MAX = 10;
     /**
      * A custom media control intent category for special requests that are
      * supported by this provider's routes.
      */
     public static final String CATEGORY_SAMPLE_ROUTE =
             "com.example.android.mediarouteprovider.CATEGORY_SAMPLE_ROUTE";
- 
     /**
      * A custom media control intent action for special requests that are
      * supported by this provider's routes.
@@ -66,34 +66,62 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
      */
     public static final String ACTION_GET_STATISTICS =
             "com.example.android.mediarouteprovider.ACTION_GET_STATISTICS";
- 
     /**
      * {@link #ACTION_GET_STATISTICS} result data: Number of times the
      * playback action was invoked.
      */
     public static final String DATA_PLAYBACK_COUNT =
             "com.example.android.mediarouteprovider.EXTRA_PLAYBACK_COUNT";
- 
     private static final ArrayList<IntentFilter> CONTROL_FILTERS_BASIC;
     private static final ArrayList<IntentFilter> CONTROL_FILTERS_QUEUING;
     private static final ArrayList<IntentFilter> CONTROL_FILTERS_SESSION;
- 
     static {
- 
- 
- 
- 
- 
- 
+        IntentFilter f1 = new IntentFilter();
+        f1.addCategory(CATEGORY_SAMPLE_ROUTE);
+        f1.addAction(ACTION_GET_STATISTICS);
+        IntentFilter f2 = new IntentFilter();
+        f2.addCategory(MediaControlIntent.CATEGORY_REMOTE_PLAYBACK);
+        f2.addAction(MediaControlIntent.ACTION_PLAY);
+        f2.addDataScheme("http");
+        f2.addDataScheme("https");
+        f2.addDataScheme("rtsp");
+        f2.addDataScheme("file");
+        addDataTypeUnchecked(f2, "video/*");
+        IntentFilter f3 = new IntentFilter();
+        f3.addCategory(MediaControlIntent.CATEGORY_REMOTE_PLAYBACK);
+        f3.addAction(MediaControlIntent.ACTION_SEEK);
+        f3.addAction(MediaControlIntent.ACTION_GET_STATUS);
+        f3.addAction(MediaControlIntent.ACTION_PAUSE);
+        f3.addAction(MediaControlIntent.ACTION_RESUME);
+        f3.addAction(MediaControlIntent.ACTION_STOP);
+        IntentFilter f4 = new IntentFilter();
+        f4.addCategory(MediaControlIntent.CATEGORY_REMOTE_PLAYBACK);
+        f4.addAction(MediaControlIntent.ACTION_ENQUEUE);
+        f4.addDataScheme("http");
+        f4.addDataScheme("https");
+        f4.addDataScheme("rtsp");
+        f4.addDataScheme("file");
+        addDataTypeUnchecked(f4, "video/*");
+        IntentFilter f5 = new IntentFilter();
+        f5.addCategory(MediaControlIntent.CATEGORY_REMOTE_PLAYBACK);
+        f5.addAction(MediaControlIntent.ACTION_REMOVE);
+        IntentFilter f6 = new IntentFilter();
+        f6.addCategory(MediaControlIntent.CATEGORY_REMOTE_PLAYBACK);
+        f6.addAction(MediaControlIntent.ACTION_START_SESSION);
+        f6.addAction(MediaControlIntent.ACTION_GET_SESSION_STATUS);
+        f6.addAction(MediaControlIntent.ACTION_END_SESSION);
         CONTROL_FILTERS_BASIC = new ArrayList<IntentFilter>();
- 
+        CONTROL_FILTERS_BASIC.add(f1);
+        CONTROL_FILTERS_BASIC.add(f2);
+        CONTROL_FILTERS_BASIC.add(f3);
         CONTROL_FILTERS_QUEUING =
                 new ArrayList<IntentFilter>(CONTROL_FILTERS_BASIC);
- 
+        CONTROL_FILTERS_QUEUING.add(f4);
+        CONTROL_FILTERS_QUEUING.add(f5);
         CONTROL_FILTERS_SESSION =
                 new ArrayList<IntentFilter>(CONTROL_FILTERS_QUEUING);
+        CONTROL_FILTERS_SESSION.add(f6);
     }
- 
     private static void addDataTypeUnchecked(IntentFilter filter, String type) {
         try {
             filter.addDataType(type);
@@ -101,23 +129,19 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
             throw new RuntimeException(ex);
         }
     }
- 
+    private int mVolume = 5;
     private int mEnqueueCount;
- 
     public SampleMediaRouteProvider(Context context) {
         super(context);
- 
         publishRoutes();
     }
- 
     @Override
     public RouteController onCreateRouteController(String routeId) {
         return new SampleRouteController(routeId);
     }
- 
     private void publishRoutes() {
         Resources r = getContext().getResources();
- 
+        MediaRouteDescriptor routeDescriptor1 = new MediaRouteDescriptor.Builder(
                 FIXED_VOLUME_ROUTE_ID,
                 r.getString(R.string.fixed_volume_route_name))
                 .setDescription(r.getString(R.string.sample_route_description))
@@ -127,7 +151,7 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
                 .setVolumeHandling(MediaRouter.RouteInfo.PLAYBACK_VOLUME_FIXED)
                 .setVolume(VOLUME_MAX)
                 .build();
- 
+        MediaRouteDescriptor routeDescriptor2 = new MediaRouteDescriptor.Builder(
                 VARIABLE_VOLUME_BASIC_ROUTE_ID,
                 r.getString(R.string.variable_volume_basic_route_name))
                 .setDescription(r.getString(R.string.sample_route_description))
@@ -138,7 +162,7 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
                 .setVolumeMax(VOLUME_MAX)
                 .setVolume(mVolume)
                 .build();
- 
+        MediaRouteDescriptor routeDescriptor3 = new MediaRouteDescriptor.Builder(
                 VARIABLE_VOLUME_QUEUING_ROUTE_ID,
                 r.getString(R.string.variable_volume_queuing_route_name))
                 .setDescription(r.getString(R.string.sample_route_description))
@@ -149,7 +173,7 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
                 .setVolumeMax(VOLUME_MAX)
                 .setVolume(mVolume)
                 .build();
- 
+        MediaRouteDescriptor routeDescriptor4 = new MediaRouteDescriptor.Builder(
                 VARIABLE_VOLUME_SESSION_ROUTE_ID,
                 r.getString(R.string.variable_volume_session_route_name))
                 .setDescription(r.getString(R.string.sample_route_description))
@@ -160,19 +184,20 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
                 .setVolumeMax(VOLUME_MAX)
                 .setVolume(mVolume)
                 .build();
- 
         MediaRouteProviderDescriptor providerDescriptor =
                 new MediaRouteProviderDescriptor.Builder()
+                .addRoute(routeDescriptor1)
+                .addRoute(routeDescriptor2)
+                .addRoute(routeDescriptor3)
+                .addRoute(routeDescriptor4)
                 .build();
         setDescriptor(providerDescriptor);
     }
- 
     private final class SampleRouteController extends MediaRouteProvider.RouteController {
         private final String mRouteId;
         private final SessionManager mSessionManager = new SessionManager("mrp");
         private final Player mPlayer;
         private PendingIntent mSessionReceiver;
- 
         public SampleRouteController(String routeId) {
             mRouteId = routeId;
             mPlayer = Player.create(getContext(), null);
@@ -181,7 +206,6 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
                 @Override
                 public void onStatusChanged() {
                 }
- 
                 @Override
                 public void onItemChanged(PlaylistItem item) {
                     handleStatusChange(item);
@@ -189,25 +213,21 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
             });
             Log.d(TAG, mRouteId + ": Controller created");
         }
- 
         @Override
         public void onRelease() {
             Log.d(TAG, mRouteId + ": Controller released");
             mPlayer.release();
         }
- 
         @Override
         public void onSelect() {
             Log.d(TAG, mRouteId + ": Selected");
             mPlayer.connect(null);
         }
- 
         @Override
         public void onUnselect() {
             Log.d(TAG, mRouteId + ": Unselected");
             mPlayer.release();
         }
- 
         @Override
         public void onSetVolume(int volume) {
             Log.d(TAG, mRouteId + ": Set volume to " + volume);
@@ -215,7 +235,6 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
                 setVolumeInternal(volume);
             }
         }
- 
         @Override
         public void onUpdateVolume(int delta) {
             Log.d(TAG, mRouteId + ": Update volume by " + delta);
@@ -223,7 +242,6 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
                 setVolumeInternal(mVolume + delta);
             }
         }
- 
         @Override
         public boolean onControlRequest(Intent intent, ControlRequestCallback callback) {
             Log.d(TAG, mRouteId + ": Received control request " + intent);
@@ -256,7 +274,6 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
                 Log.d(TAG, mSessionManager.toString());
                 return success;
             }
- 
             if (action.equals(ACTION_GET_STATISTICS)
                     && intent.hasCategory(CATEGORY_SAMPLE_ROUTE)) {
                 Bundle data = new Bundle();
@@ -268,16 +285,16 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
             }
             return false;
         }
- 
         private void setVolumeInternal(int volume) {
+            if (volume >= 0 && volume <= VOLUME_MAX) {
                 mVolume = volume;
                 Log.d(TAG, mRouteId + ": New volume is " + mVolume);
                 AudioManager audioManager =
                         (AudioManager)getContext().getSystemService(Context.AUDIO_SERVICE);
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0);
                 publishRoutes();
             }
         }
- 
         private boolean handlePlay(Intent intent, ControlRequestCallback callback) {
             String sid = intent.getStringExtra(MediaControlIntent.EXTRA_SESSION_ID);
             if (sid != null && !sid.equals(mSessionManager.getSessionId())) {
@@ -289,27 +306,24 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
             }
             return handleEnqueue(intent, callback);
         }
- 
         private boolean handleEnqueue(Intent intent, ControlRequestCallback callback) {
             String sid = intent.getStringExtra(MediaControlIntent.EXTRA_SESSION_ID);
             if (sid != null && !sid.equals(mSessionManager.getSessionId())) {
                 Log.d(TAG, "handleEnqueue fails because of bad sid="+sid);
                 return false;
             }
- 
             Uri uri = intent.getData();
             if (uri == null) {
                 Log.d(TAG, "handleEnqueue fails because of bad uri="+uri);
                 return false;
             }
- 
             boolean enqueue = intent.getAction().equals(MediaControlIntent.ACTION_ENQUEUE);
             String mime = intent.getType();
+            long pos = intent.getLongExtra(MediaControlIntent.EXTRA_ITEM_CONTENT_POSITION, 0);
             Bundle metadata = intent.getBundleExtra(MediaControlIntent.EXTRA_ITEM_METADATA);
             Bundle headers = intent.getBundleExtra(MediaControlIntent.EXTRA_ITEM_HTTP_HEADERS);
             PendingIntent receiver = (PendingIntent)intent.getParcelableExtra(
                     MediaControlIntent.EXTRA_ITEM_STATUS_UPDATE_RECEIVER);
- 
             Log.d(TAG, mRouteId + ": Received " + (enqueue?"enqueue":"play") + " request"
                     + ", uri=" + uri
                     + ", mime=" + mime
@@ -331,15 +345,14 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
                     callback.onError("Failed to open " + uri.toString(), null);
                 }
             }
+            mEnqueueCount +=1;
             return true;
         }
- 
         private boolean handleRemove(Intent intent, ControlRequestCallback callback) {
             String sid = intent.getStringExtra(MediaControlIntent.EXTRA_SESSION_ID);
             if (sid == null || !sid.equals(mSessionManager.getSessionId())) {
                 return false;
             }
- 
             String iid = intent.getStringExtra(MediaControlIntent.EXTRA_ITEM_ID);
             PlaylistItem item = mSessionManager.remove(iid);
             if (callback != null) {
@@ -355,14 +368,13 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
             }
             return (item != null);
         }
- 
         private boolean handleSeek(Intent intent, ControlRequestCallback callback) {
             String sid = intent.getStringExtra(MediaControlIntent.EXTRA_SESSION_ID);
             if (sid == null || !sid.equals(mSessionManager.getSessionId())) {
                 return false;
             }
- 
             String iid = intent.getStringExtra(MediaControlIntent.EXTRA_ITEM_ID);
+            long pos = intent.getLongExtra(MediaControlIntent.EXTRA_ITEM_CONTENT_POSITION, 0);
             Log.d(TAG, mRouteId + ": Received seek request, pos=" + pos);
             PlaylistItem item = mSessionManager.seek(iid, pos);
             if (callback != null) {
@@ -378,7 +390,6 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
             }
             return (item != null);
         }
- 
         private boolean handleGetStatus(Intent intent, ControlRequestCallback callback) {
             String sid = intent.getStringExtra(MediaControlIntent.EXTRA_SESSION_ID);
             String iid = intent.getStringExtra(MediaControlIntent.EXTRA_ITEM_ID);
@@ -397,7 +408,6 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
             }
             return (item != null);
         }
- 
         private boolean handlePause(Intent intent, ControlRequestCallback callback) {
             String sid = intent.getStringExtra(MediaControlIntent.EXTRA_SESSION_ID);
             boolean success = (sid != null) && sid.equals(mSessionManager.getSessionId());
@@ -412,7 +422,6 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
             }
             return success;
         }
- 
         private boolean handleResume(Intent intent, ControlRequestCallback callback) {
             String sid = intent.getStringExtra(MediaControlIntent.EXTRA_SESSION_ID);
             boolean success = (sid != null) && sid.equals(mSessionManager.getSessionId());
@@ -427,7 +436,6 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
             }
             return success;
         }
- 
         private boolean handleStop(Intent intent, ControlRequestCallback callback) {
             String sid = intent.getStringExtra(MediaControlIntent.EXTRA_SESSION_ID);
             boolean success = (sid != null) && sid.equals(mSessionManager.getSessionId());
@@ -442,7 +450,6 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
             }
             return success;
         }
- 
         private boolean handleStartSession(Intent intent, ControlRequestCallback callback) {
             String sid = mSessionManager.startSession();
             Log.d(TAG, "StartSession returns sessionId "+sid);
@@ -462,10 +469,8 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
             }
             return (sid != null);
         }
- 
         private boolean handleGetSessionStatus(Intent intent, ControlRequestCallback callback) {
             String sid = intent.getStringExtra(MediaControlIntent.EXTRA_SESSION_ID);
- 
             MediaSessionStatus sessionStatus = mSessionManager.getSessionStatus(sid);
             if (callback != null) {
                 if (sessionStatus != null) {
@@ -479,7 +484,6 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
             }
             return (sessionStatus != null);
         }
- 
         private boolean handleEndSession(Intent intent, ControlRequestCallback callback) {
             String sid = intent.getStringExtra(MediaControlIntent.EXTRA_SESSION_ID);
             boolean success = (sid != null) && sid.equals(mSessionManager.getSessionId())
@@ -499,7 +503,6 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
             }
             return success;
         }
- 
         private void handleStatusChange(PlaylistItem item) {
             if (item == null) {
                 item = mSessionManager.getCurrentItem();
@@ -513,6 +516,7 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
                     intent.putExtra(MediaControlIntent.EXTRA_ITEM_STATUS,
                             item.getStatus().asBundle());
                     try {
+                        receiver.send(getContext(), 0, intent);
                         Log.d(TAG, mRouteId + ": Sending status update from provider");
                     } catch (PendingIntent.CanceledException e) {
                         Log.d(TAG, mRouteId + ": Failed to send status update!");
@@ -520,7 +524,6 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
                 }
             }
         }
- 
         private void handleSessionStatusChange(String sid) {
             if (mSessionReceiver != null) {
                 Intent intent = new Intent();
@@ -528,6 +531,7 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
                 intent.putExtra(MediaControlIntent.EXTRA_SESSION_STATUS,
                         mSessionManager.getSessionStatus(sid).asBundle());
                 try {
+                    mSessionReceiver.send(getContext(), 0, intent);
                     Log.d(TAG, mRouteId + ": Sending session status update from provider");
                 } catch (PendingIntent.CanceledException e) {
                     Log.d(TAG, mRouteId + ": Failed to send session status update!");
@@ -536,4 +540,3 @@ public final class SampleMediaRouteProvider extends MediaRouteProvider {
         }
     }
 }
-  

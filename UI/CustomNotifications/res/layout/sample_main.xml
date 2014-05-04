@@ -1,9 +1,10 @@
-
-    
 <!--
+  * Copyright (C) 2013 The Android Open Source Project
+  * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
   * You may obtain a copy of the License at
   *
+  *       http://www.apache.org/licenses/LICENSE-2.0
   *
   * Unless required by applicable law or agreed to in writing, software
   * distributed under the License is distributed on an "AS IS" BASIS,
@@ -11,10 +12,8 @@
   * See the License for the specific language governing permissions and
   * limitations under the License.
   -->
- 
 <!-- Layout for MainActivity.
  Includes an introductory text and a button to show the notification. -->
- 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -26,18 +25,14 @@
     android:orientation="vertical"
     tools:context=".MainActivity"
     android:gravity="center_horizontal">
- 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/intro_text" />
- 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/show_notification"
         android:id="@+id/button"
         android:onClick="showNotificationClicked" />
- 
 </LinearLayout>
-  
