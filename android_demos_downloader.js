@@ -1,3 +1,5 @@
+// notice: have no test yet !
+
 var fs = require('fs'),
     $ = require('jquery');
 
@@ -22,16 +24,20 @@ function getFileLists() {
 }
 
 function parseIndexPage() {
-    $.get('http://developer.android.com/samples/index.html', function (doc) {
-        $(doc).find('#nav').children('.nav-section').each(function (_, li) {
-            parseFileLists($(li), fileList);
-        });
-        //写入文件
-        var text = JSON.stringify(fileList);
-        fs.writeFile(jsonFileName, txt, function (err) {
-            if (err) throw err;
-            console.log('It\'s saved!'); //文件被保存
-        });
+    $.ajax({
+        type: 'get',
+        url: 'http://developer.android.com/samples/index.html',
+        success: function (doc) {
+            $(doc).find('#nav').children('.nav-section').each(function (_, li) {
+                parseFileLists($(li), fileList);
+            });
+            //写入文件
+            var text = JSON.stringify(fileList);
+            fs.writeFile(jsonFileName, txt, function (err) {
+                if (err) throw err;
+                console.log('It\'s saved!'); //文件被保存
+            });
+        }
     });
 }
 
@@ -87,7 +93,7 @@ function parseCodePage(path, name, url, callback) {
             var content = $(html).find('#codesample-wrapper').text();
             var arr = content.split("\n");
             for (var i = 0; i < arr.length; i++) {
-                if (!/\d/.test($.trim(arr[i]))) {
+                if (!/\d/.test($.trim(arr[i])) && $.trim(arr[i]) != '') {
                     arr.push(arr[i]);
                 }
             }
@@ -137,9 +143,9 @@ function downloadImage(path, url) {
     $.get(url, function (data) {
         fs.writeFile(path, data, function (err) {
             if (err) {
-                throw err
+                throw err;
             }
-            ;
+
             console.log('download over and saved to ' + path);
             var arr = url.split('/');
             var imgName = arr[arr.length - 2] + '/' + arr[arr.length - 1];
