@@ -1,0 +1,4 @@
+This is a program to download the demos of android on http://developer.android.com/samples
+by load and parse html pages to get the codes instead of download by the download links that google provides
+because developers of some countries or areas can't open those download links (you know what I mean)
+I hope this little program can help you
