@@ -1,5 +1,13 @@
 # encoding: utf-8
 
+# Install
+#    this is a ruby program, so install ruby first
+#    after ruby installed, install needed gems
+#    gem install nokogiri active_support
+#
+# Usage
+#    ruby android_demos_downloader.rb
+
 require 'nokogiri'
 require 'open-uri'
 require 'active_support'
@@ -11,7 +19,7 @@ class DownLoader
   def start
     @file_list = {}
     @stack = []
-    @images = {}
+    # @images = {}
     parse_index_page
     current_path = Pathname.new(File.dirname(__FILE__)).realpath.to_s + '/'
     save_codes(@file_list, current_path)
@@ -59,6 +67,11 @@ class DownLoader
       if link.length > 0
         url = link.attr('href').value
         file_name = link.attr('title').value
+        if is_image?(file_name)
+          arr = url.split('/')
+          arr[-1] = file_name
+          url = arr.join('/')
+        end
         list[file_name] = url
       end
     end
@@ -84,25 +97,25 @@ class DownLoader
     if is_image?(name)
       code = "http://developer.android.com#{url.start_with?('/') ? '' : '/'}#{url}"
     else
-      puts "parse #{url}"
-	  t1 = Time.now
+      puts "\nparse #{url}"
+      t1 = Time.now
       page = open("http://developer.android.com#{url}")
-	  t2 = Time.now
-	  puts "download takes #{t2 - t1}s"
-	  doc = Nokogiri::HTML(page)
+      t2 = Time.now
+      puts "download takes #{t2 - t1}s"
+      doc = Nokogiri::HTML(page)
       wrappers = doc.css('#codesample-wrapper')
       if wrappers && wrappers[0]
         arr = []
         wrappers[0].content.split("\n").each do |line|
-          unless /\d/.match(line.strip)
+          unless /^\d+$/.match(line.strip) || line.strip == ''
             arr << line
           end
         end
         code = arr.join("\n")
       end
-	  t3 = Time.now
-	  puts "parse page takes #{t3 - t2}s"
-	  puts "total #{t3 - t1}s"
+      t3 = Time.now
+      puts "parse page takes #{t3 - t2}s"
+      puts "total #{t3 - t1}s"
     end
 
     code
@@ -113,13 +126,13 @@ class DownLoader
     if is_image?(name)
       arr = code.split('/')
       full_name = "#{arr[-2]}/#{arr[-1]}"
-      if @images.include?(full_name)
-        FileUtils.copy(@images[full_name], "#{path}#{name}")
-      else
-        data=open(code) { |f| f.read }
-        open("#{path}#{name}", "wb") { |f| f.write(data) }
-        @images[full_name] = "#{path}#{name}"
-      end
+      # if @images.include?(full_name)
+      #   FileUtils.copy(@images[full_name], "#{path}#{name}")
+      # else
+      data=open(code) { |f| f.read }
+      open("#{path}#{name}", "wb") { |f| f.write(data) }
+      # @images[full_name] = "#{path}#{name}"
+      # end
     else
       unless File.exists? "#{path}#{name}"
         file = File.new("#{path}#{name}", 'w')
