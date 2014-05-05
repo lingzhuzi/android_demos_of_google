@@ -1,10 +1,11 @@
-
-    
 /*
+ * Copyright 2013 The Android Open Source Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,13 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 package com.example.android.common.dummydata;
- 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
- 
 /**
  * Dummy data.
  */
@@ -155,14 +153,13 @@ public class Cheeses {
             "Xanadu", "Xynotyro", "Yarg Cornish", "Yarra Valley Pyramid", "Yorkshire Blue",
             "Zamorano", "Zanetti Grana Padano", "Zanetti Parmigiano Reggiano"
     };
- 
     public static ArrayList<String> asList() {
         ArrayList<String> items = new ArrayList<String>();
+        for (int i = 0, z = CHEESES.length ; i < z ; i++) {
             items.add(CHEESES[i]);
         }
         return items;
     }
- 
     /**
      * Return a list of random cheeses.
      *
@@ -171,15 +168,11 @@ public class Cheeses {
     public static ArrayList<String> randomList(int count) {
         Random random = new Random();
         HashSet<String> items = new HashSet<String>();
- 
         // Make sure that don't infinity loop
         count = Math.min(count, CHEESES.length);
- 
         while (items.size() < count) {
             items.add(CHEESES[random.nextInt(CHEESES.length)]);
         }
- 
         return new ArrayList<String>(items);
     }
 }
-  
