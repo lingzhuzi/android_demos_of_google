@@ -1,10 +1,11 @@
-
-    
 /*
+* Copyright (C) 2013 The Android Open Source Project
 *
+* Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
 *
+*      http://www.apache.org/licenses/LICENSE-2.0
 *
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,23 +14,18 @@
 * limitations under the License.
 */
 package com.example.android.basicimmersivemode;
- 
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.view.MenuItem;
 import android.view.View;
- 
 import com.example.android.common.logger.Log;
- 
 public class BasicImmersiveModeFragment extends Fragment {
- 
     public static final String TAG = "BasicImmersiveModeFragment";
- 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
     }
- 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -43,7 +39,6 @@ public class BasicImmersiveModeFragment extends Fragment {
                     }
                 });
     }
- 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.sample_action) {
@@ -51,7 +46,6 @@ public class BasicImmersiveModeFragment extends Fragment {
         }
         return true;
     }
- 
     /**
      * Detects and toggles immersive mode.
      */
@@ -67,7 +61,7 @@ public class BasicImmersiveModeFragment extends Fragment {
         } else {
             Log.i(TAG, "Turning immersive mode mode on.");
         }
- 
+        // Immersive mode: Backward compatible to KitKat (API 19).
         // Note that this flag doesn't do anything by itself, it only augments the behavior
         // of HIDE_NAVIGATION and FLAG_FULLSCREEN.  For the purposes of this sample
         // all three flags are being toggled together.
@@ -79,4 +73,3 @@ public class BasicImmersiveModeFragment extends Fragment {
         getActivity().getWindow().getDecorView().setSystemUiVisibility(newUiOptions);
     }
 }
-  

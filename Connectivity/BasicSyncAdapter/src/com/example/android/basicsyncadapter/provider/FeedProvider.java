@@ -1,10 +1,11 @@
-
-    
 /*
+ * Copyright 2013 The Android Open Source Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 package com.example.android.basicsyncadapter.provider;
- 
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
@@ -23,17 +22,13 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
- 
 import com.example.android.common.db.SelectionBuilder;
- 
 public class FeedProvider extends ContentProvider {
     FeedDatabase mDatabaseHelper;
- 
     /**
      * Content authority for this provider.
      */
     private static final String AUTHORITY = FeedContract.CONTENT_AUTHORITY;
- 
     // The constants below represent individual URI routes, as IDs. Every URI pattern recognized by
     // this ContentProvider is defined using sUriMatcher.addURI(), and associated with one of these
     // IDs.
@@ -43,11 +38,11 @@ public class FeedProvider extends ContentProvider {
     /**
      * URI ID for route: /entries
      */
- 
+    public static final int ROUTE_ENTRIES = 1;
     /**
      * URI ID for route: /entries/{ID}
      */
- 
+    public static final int ROUTE_ENTRIES_ID = 2;
     /**
      * UriMatcher, used to decode incoming URIs.
      */
@@ -56,13 +51,11 @@ public class FeedProvider extends ContentProvider {
         sUriMatcher.addURI(AUTHORITY, "entries", ROUTE_ENTRIES);
         sUriMatcher.addURI(AUTHORITY, "entries/*", ROUTE_ENTRIES_ID);
     }
- 
     @Override
     public boolean onCreate() {
         mDatabaseHelper = new FeedDatabase(getContext());
         return true;
     }
- 
     /**
      * Determine the mime type for entries returned by a given URI.
      */
@@ -78,7 +71,6 @@ public class FeedProvider extends ContentProvider {
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
     }
- 
     /**
      * Perform a database query by URI.
      *
@@ -111,7 +103,6 @@ public class FeedProvider extends ContentProvider {
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
     }
- 
     /**
      * Insert a new entry into the database.
      */
@@ -137,7 +128,6 @@ public class FeedProvider extends ContentProvider {
         ctx.getContentResolver().notifyChange(uri, null, false);
         return result;
     }
- 
     /**
      * Delete an entry by database by URI.
      */
@@ -169,7 +159,6 @@ public class FeedProvider extends ContentProvider {
         ctx.getContentResolver().notifyChange(uri, null, false);
         return count;
     }
- 
     /**
      * Update an etry in the database by URI.
      */
@@ -200,7 +189,6 @@ public class FeedProvider extends ContentProvider {
         ctx.getContentResolver().notifyChange(uri, null, false);
         return count;
     }
- 
     /**
      * SQLite backend for @{link FeedProvider}.
      *
@@ -209,9 +197,9 @@ public class FeedProvider extends ContentProvider {
      */
     static class FeedDatabase extends SQLiteOpenHelper {
         /** Schema version. */
+        public static final int DATABASE_VERSION = 1;
         /** Filename for SQLite file. */
         public static final String DATABASE_NAME = "feed.db";
- 
         private static final String TYPE_TEXT = " TEXT";
         private static final String TYPE_INTEGER = " INTEGER";
         private static final String COMMA_SEP = ",";
@@ -223,20 +211,16 @@ public class FeedProvider extends ContentProvider {
                         FeedContract.Entry.COLUMN_NAME_TITLE    + TYPE_TEXT + COMMA_SEP +
                         FeedContract.Entry.COLUMN_NAME_LINK + TYPE_TEXT + COMMA_SEP +
                         FeedContract.Entry.COLUMN_NAME_PUBLISHED + TYPE_INTEGER + ")";
- 
         /** SQL statement to drop "entry" table. */
         private static final String SQL_DELETE_ENTRIES =
                 "DROP TABLE IF EXISTS " + FeedContract.Entry.TABLE_NAME;
- 
         public FeedDatabase(Context context) {
             super(context, DATABASE_NAME, null, DATABASE_VERSION);
         }
- 
         @Override
         public void onCreate(SQLiteDatabase db) {
             db.execSQL(SQL_CREATE_ENTRIES);
         }
- 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
             // This database is only a cache for online data, so its upgrade policy is
@@ -246,4 +230,3 @@ public class FeedProvider extends ContentProvider {
         }
     }
 }
-  

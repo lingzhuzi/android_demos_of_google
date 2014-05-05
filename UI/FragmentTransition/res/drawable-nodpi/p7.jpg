@@ -445,10 +445,10 @@ onkeyup="return search_changed(event, false, '/')" />
   <div class="sum-details-links">
 
   <!-- related links -->
-  <a href="/samples/FragmentTransition/index.html">Overview</a>
-  &#124; <a href="/samples/FragmentTransition/project.html">Project</a>
-  &#124; <a href="/downloads/samples/FragmentTransition.zip"
-    onclick="_gaq.push(['_trackEvent', 'Samples', 'Download', FragmentTransition]);"
+  <a href="/samples/AdapterTransition/index.html">Overview</a>
+  &#124; <a href="/samples/AdapterTransition/project.html">Project</a>
+  &#124; <a href="/downloads/samples/AdapterTransition.zip"
+    onclick="_gaq.push(['_trackEvent', 'Samples', 'Download', AdapterTransition]);"
     >Download</a>
 
 </div><!-- end sum-details-links -->
@@ -459,7 +459,7 @@ onkeyup="return search_changed(event, false, '/')" />
 
 <div id="pathCrumb">
 
-  FragmentTransition / 
+  AdapterTransition / 
 
   res / 
 

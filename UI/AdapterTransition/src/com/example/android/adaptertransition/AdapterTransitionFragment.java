@@ -1,10 +1,11 @@
-
-    
 /*
+ * Copyright 2014 The Android Open Source Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 package com.example.android.adaptertransition;
- 
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.transition.AutoTransition;
 import android.transition.Scene;
 import android.transition.Transition;
@@ -31,56 +32,46 @@ import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.ListView;
 import android.widget.Toast;
- 
 /**
  * Main screen for AdapterTransition sample.
  */
 public class AdapterTransitionFragment extends Fragment implements Transition.TransitionListener {
- 
     /**
      * Since the transition framework requires all relevant views in a view hierarchy to be marked
      * with IDs, we use this ID to mark the root view.
      */
- 
+    private static final int ROOT_ID = 1;
     /**
      * A tag for saving state whether the mAbsListView is ListView or GridView.
      */
     private static final String STATE_IS_LISTVIEW = "is_listview";
- 
     /**
      * This is where we place our AdapterView (ListView / GridView).
      */
     private FrameLayout mContent;
- 
     /**
      * This is where we carry out the transition.
      */
     private FrameLayout mCover;
- 
     /**
      * This list shows our contents. It can be ListView or GridView, and we toggle between them
      * using the transition framework.
      */
     private AbsListView mAbsListView;
- 
     /**
      * This is our contents.
      */
     private MeatAdapter mAdapter;
- 
     public static AdapterTransitionFragment newInstance() {
         return new AdapterTransitionFragment();
     }
- 
     public AdapterTransitionFragment() {
     }
- 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
     }
- 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -95,13 +86,11 @@ public class AdapterTransitionFragment extends Fragment implements Transition.Tr
         inflateAbsList(inflater, container, isListView);
         return inflater.inflate(R.layout.fragment_adapter_transition, container, false);
     }
- 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putBoolean(STATE_IS_LISTVIEW, mAbsListView instanceof ListView);
     }
- 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         // Retaining references for FrameLayouts that we use later.
@@ -110,12 +99,10 @@ public class AdapterTransitionFragment extends Fragment implements Transition.Tr
         // We are attaching the list to the screen here.
         mContent.addView(mAbsListView);
     }
- 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.fragment_adapter_transition, menu);
     }
- 
     @Override
     public void onPrepareOptionsMenu(Menu menu) {
         // We change the look of the icon every time the user toggles between list and grid.
@@ -130,7 +117,6 @@ public class AdapterTransitionFragment extends Fragment implements Transition.Tr
             }
         }
     }
- 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
@@ -141,30 +127,24 @@ public class AdapterTransitionFragment extends Fragment implements Transition.Tr
         }
         return false;
     }
- 
     @Override
     public void onTransitionStart(Transition transition) {
     }
- 
     @Override
     public void onTransitionEnd(Transition transition) {
         // When the transition ends, we remove all the views from the overlay and hide it.
         mCover.removeAllViews();
         mCover.setVisibility(View.INVISIBLE);
     }
- 
     @Override
     public void onTransitionCancel(Transition transition) {
     }
- 
     @Override
     public void onTransitionPause(Transition transition) {
     }
- 
     @Override
     public void onTransitionResume(Transition transition) {
     }
- 
     /**
      * Inflate a ListView or a GridView with a corresponding ListAdapter.
      *
@@ -187,7 +167,6 @@ public class AdapterTransitionFragment extends Fragment implements Transition.Tr
         mAbsListView.setAdapter(mAdapter);
         mAbsListView.setOnItemClickListener(mAdapter);
     }
- 
     /**
      * Toggle the UI between ListView and GridView.
      */
@@ -215,7 +194,6 @@ public class AdapterTransitionFragment extends Fragment implements Transition.Tr
             }
         });
     }
- 
     /**
      * Swap ListView with GridView, or GridView with ListView.
      */
@@ -234,7 +212,6 @@ public class AdapterTransitionFragment extends Fragment implements Transition.Tr
         mContent.removeAllViews();
         mContent.addView(mAbsListView);
     }
- 
     /**
      * Copy all the visible views in the mAbsListView into a new FrameLayout and return it.
      *
@@ -247,6 +224,7 @@ public class AdapterTransitionFragment extends Fragment implements Transition.Tr
         layout.setId(ROOT_ID);
         // We only copy visible views.
         int first = mAbsListView.getFirstVisiblePosition();
+        int index = 0;
         while (true) {
             // This is one of the views that we copy. Note that the argument for getChildAt is a
             // zero-oriented index, and it doesn't usually match with its position in the list.
@@ -267,6 +245,4 @@ public class AdapterTransitionFragment extends Fragment implements Transition.Tr
         }
         return layout;
     }
- 
 }
-  

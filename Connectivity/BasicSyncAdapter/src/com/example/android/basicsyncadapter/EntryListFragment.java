@@ -1,10 +1,11 @@
-
-    
 /*
+ * Copyright 2013 The Android Open Source Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 package com.example.android.basicsyncadapter;
- 
 import android.accounts.Account;
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -25,6 +24,11 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.ListFragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
+import android.support.v4.widget.SimpleCursorAdapter;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.Menu;
@@ -33,10 +37,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.TextView;
- 
 import com.example.android.common.accounts.GenericAccountService;
 import com.example.android.basicsyncadapter.provider.FeedContract;
- 
 /**
  * List fragment containing a list of Atom entry objects (articles) stored in the local database.
  *
@@ -58,14 +60,11 @@ import com.example.android.basicsyncadapter.provider.FeedContract;
  */
 public class EntryListFragment extends ListFragment
         implements LoaderManager.LoaderCallbacks<Cursor> {
- 
     private static final String TAG = "EntryListFragment";
- 
     /**
      * Cursor adapter for controlling ListView results.
      */
     private SimpleCursorAdapter mAdapter;
- 
     /**
      * Handle to a SyncObserver. The ProgressBar element is visible until the SyncObserver reports
      * that the sync is complete.
@@ -74,12 +73,10 @@ public class EntryListFragment extends ListFragment
      * foreground.
      */
     private Object mSyncObserverHandle;
- 
     /**
      * Options menu used to populate ActionBar.
      */
     private Menu mOptionsMenu;
- 
     /**
      * Projection for querying the content provider.
      */
@@ -89,14 +86,16 @@ public class EntryListFragment extends ListFragment
             FeedContract.Entry.COLUMN_NAME_LINK,
             FeedContract.Entry.COLUMN_NAME_PUBLISHED
     };
- 
     // Column indexes. The index of a column in the Cursor is the same as its relative position in
     // the projection.
     /** Column index for _ID */
+    private static final int COLUMN_ID = 0;
     /** Column index for title */
+    private static final int COLUMN_TITLE = 1;
     /** Column index for link */
+    private static final int COLUMN_URL_STRING = 2;
     /** Column index for published */
- 
+    private static final int COLUMN_PUBLISHED = 3;
     /**
      * List of Cursor columns to read from when preparing an adapter to populate the ListView.
      */
@@ -104,24 +103,22 @@ public class EntryListFragment extends ListFragment
             FeedContract.Entry.COLUMN_NAME_TITLE,
             FeedContract.Entry.COLUMN_NAME_PUBLISHED
     };
- 
     /**
      * List of Views which will be populated by Cursor data.
      */
     private static final int[] TO_FIELDS = new int[]{
- 
+            android.R.id.text1,
+            android.R.id.text2};
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
      * fragment (e.g. upon screen orientation changes).
      */
     public EntryListFragment() {}
- 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
     }
- 
     /**
      * Create SyncAccount at launch, if needed.
      *
@@ -131,20 +128,19 @@ public class EntryListFragment extends ListFragment
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
- 
         // Create account, if needed
         SyncUtils.CreateSyncAccount(activity);
     }
- 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
- 
         mAdapter = new SimpleCursorAdapter(
                 getActivity(),       // Current context
+                android.R.layout.simple_list_item_activated_2,  // Layout for individual rows
                 null,                // Cursor
                 FROM_COLUMNS,        // Cursor columns to use
                 TO_FIELDS,           // Layout fields to use
+                0                    // No flags
         );
         mAdapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
             @Override
@@ -163,18 +159,17 @@ public class EntryListFragment extends ListFragment
         });
         setListAdapter(mAdapter);
         setEmptyText(getText(R.string.loading));
+        getLoaderManager().initLoader(0, null, this);
     }
- 
     @Override
     public void onResume() {
         super.onResume();
- 
+        mSyncStatusObserver.onStatusChanged(0);
         // Watch for sync state changes
         final int mask = ContentResolver.SYNC_OBSERVER_TYPE_PENDING |
                 ContentResolver.SYNC_OBSERVER_TYPE_ACTIVE;
         mSyncObserverHandle = ContentResolver.addStatusChangeListener(mask, mSyncStatusObserver);
     }
- 
     @Override
     public void onPause() {
         super.onPause();
@@ -183,7 +178,6 @@ public class EntryListFragment extends ListFragment
             mSyncObserverHandle = null;
         }
     }
- 
     /**
      * Query the content provider for data.
      *
@@ -195,6 +189,7 @@ public class EntryListFragment extends ListFragment
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
         // We only have one loader, so we can ignore the value of i.
+        // (It'll be '0', as set in onCreate().)
         return new CursorLoader(getActivity(),  // Context
                 FeedContract.Entry.CONTENT_URI, // URI
                 PROJECTION,                // Projection
@@ -202,7 +197,6 @@ public class EntryListFragment extends ListFragment
                 null,                           // Selection args
                 FeedContract.Entry.COLUMN_NAME_PUBLISHED + " desc"); // Sort
     }
- 
     /**
      * Move the Cursor returned by the query into the ListView adapter. This refreshes the existing
      * UI with the data in the Cursor.
@@ -211,7 +205,6 @@ public class EntryListFragment extends ListFragment
     public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
         mAdapter.changeCursor(cursor);
     }
- 
     /**
      * Called when the ContentObserver defined for the content provider detects that data has
      * changed. The ContentObserver resets the loader, and then re-runs the loader. In the adapter,
@@ -222,7 +215,6 @@ public class EntryListFragment extends ListFragment
     public void onLoaderReset(Loader<Cursor> cursorLoader) {
         mAdapter.changeCursor(null);
     }
- 
     /**
      * Create the ActionBar.
      */
@@ -232,7 +224,6 @@ public class EntryListFragment extends ListFragment
         mOptionsMenu = menu;
         inflater.inflate(R.menu.main, menu);
     }
- 
     /**
      * Respond to user gestures on the ActionBar.
      */
@@ -246,18 +237,15 @@ public class EntryListFragment extends ListFragment
         }
         return super.onOptionsItemSelected(item);
     }
- 
     /**
      * Load an article in the default browser when selected by the user.
      */
     @Override
     public void onListItemClick(ListView listView, View view, int position, long id) {
         super.onListItemClick(listView, view, position, id);
- 
         // Get a URI for the selected item, then start an Activity that displays the URI. Any
         // Activity that filters for ACTION_VIEW and a URI can accept this. In most cases, this will
         // be a browser.
- 
         // Get the item at the selected position, in the form of a Cursor.
         Cursor c = (Cursor) mAdapter.getItem(position);
         // Get the link to the article represented by the item.
@@ -266,14 +254,12 @@ public class EntryListFragment extends ListFragment
             Log.e(TAG, "Attempt to launch entry with null link");
             return;
         }
- 
         Log.i(TAG, "Opening URL: " + articleUrlString);
         // Get a Uri object for the URL string
         Uri articleURL = Uri.parse(articleUrlString);
         Intent i = new Intent(Intent.ACTION_VIEW, articleURL);
         startActivity(i);
     }
- 
     /**
      * Set the state of the Refresh button. If a sync is active, turn on the ProgressBar widget.
      * Otherwise, turn it off.
@@ -285,7 +271,6 @@ public class EntryListFragment extends ListFragment
         if (mOptionsMenu == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
             return;
         }
- 
         final MenuItem refreshItem = mOptionsMenu.findItem(R.id.menu_refresh);
         if (refreshItem != null) {
             if (refreshing) {
@@ -295,7 +280,6 @@ public class EntryListFragment extends ListFragment
             }
         }
     }
- 
     /**
      * Crfate a new anonymous SyncStatusObserver. It's attached to the app's ContentResolver in
      * onResume(), and removed in onPause(). If status changes, it sets the state of the Refresh
@@ -323,7 +307,6 @@ public class EntryListFragment extends ListFragment
                         setRefreshActionButtonState(false);
                         return;
                     }
- 
                     // Test the ContentResolver to see if the sync adapter is active or pending.
                     // Set the state of the refresh button accordingly.
                     boolean syncActive = ContentResolver.isSyncActive(
@@ -335,6 +318,4 @@ public class EntryListFragment extends ListFragment
             });
         }
     };
- 
 }
-  

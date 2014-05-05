@@ -1,10 +1,11 @@
-
-    
 /*
+ * Copyright (C) 2014 The Android Open Source Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 package com.example.android.customtransition;
- 
 import android.animation.Animator;
 import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
@@ -29,12 +28,9 @@ import android.transition.TransitionValues;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewPropertyAnimator;
- 
 public class ChangeColor extends Transition {
- 
     /** Key to store a color value in TransitionValues object */
     private static final String PROPNAME_BACKGROUND = "customtransition:change_color:background";
- 
     /**
      * Convenience method: Add the background Drawable property value
      * to the TransitionsValues.value Map for a target.
@@ -43,18 +39,15 @@ public class ChangeColor extends Transition {
         // Capture the property values of views for later use
         values.values.put(PROPNAME_BACKGROUND, values.view.getBackground());
     }
- 
     @Override
     public void captureStartValues(TransitionValues transitionValues) {
         captureValues(transitionValues);
     }
- 
     // Capture the value of the background drawable property for a target in the ending Scene.
     @Override
     public void captureEndValues(TransitionValues transitionValues) {
         captureValues(transitionValues);
     }
- 
     // Create an animation for each target that is in both the starting and ending Scene. For each
     // pair of targets, if their background property value is a color (rather than a graphic),
     // create a ValueAnimator based on an ArgbEvaluator that interpolates between the starting and
@@ -87,6 +80,7 @@ public class ChangeColor extends Transition {
                 // which provides a timing pulse to change property values provided to it. The
                 // animation runs on the UI thread. The Evaluator controls what type of
                 // interpolation is done. In this case, an ArgbEvaluator interpolates between two
+                // #argb values, which are specified as the 2nd and 3rd input arguments.
                 ValueAnimator animator = ValueAnimator.ofObject(new ArgbEvaluator(),
                         startColor.getColor(), endColor.getColor());
                 // Add an update listener to the Animator object.
@@ -109,6 +103,4 @@ public class ChangeColor extends Transition {
         // For non-ColorDrawable backgrounds, we just return null, and no animation will take place.
         return null;
     }
- 
 }
-  

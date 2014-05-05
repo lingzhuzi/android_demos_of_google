@@ -1,10 +1,11 @@
-
-    
 /*
+ * Copyright 2013 The Android Open Source Project
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 package com.example.android.basicmediarouter;
- 
 import android.app.Activity;
 import android.app.MediaRouteActionProvider;
 import android.content.Context;
@@ -29,7 +28,6 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
- 
 /**
  * <p>
  * This sample demonstrates the use of the MediaRouter API to show content on a
@@ -54,35 +52,27 @@ import android.widget.TextView;
  * @see android.media.MediaRouter
  */
 public class MainActivity extends Activity {
- 
     private MediaRouter mMediaRouter;
- 
     // Active Presentation, set to null if no secondary screen is enabled
     private SamplePresentation mPresentation;
- 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
- 
         setContentView(R.layout.sample_main);
         mTextStatus = (TextView) findViewById(R.id.textStatus);
- 
         // get the list of background colors
         mColors = getResources().getIntArray(R.array.androidcolors);
- 
         // Enable clicks on the 'change color' button
+        mButton = (Button) findViewById(R.id.button1);
         mButton.setOnClickListener(new View.OnClickListener() {
- 
             @Override
             public void onClick(View v) {
                 showNextColor();
             }
         });
- 
         // Get the MediaRouter service
         mMediaRouter = (MediaRouter) getSystemService(Context.MEDIA_ROUTER_SERVICE);
     }
- 
     /**
      * Implementing a {@link android.media.MediaRouter.Callback} to update the displayed
      * {@link android.app.Presentation} when a route is selected, unselected or the
@@ -101,7 +91,6 @@ public class MainActivity extends Activity {
      */
     private final MediaRouter.SimpleCallback mMediaRouterCallback =
             new MediaRouter.SimpleCallback() {
- 
                 /**
                  * A new route has been selected as active. Disable the current
                  * route and enable the new one.
@@ -110,16 +99,13 @@ public class MainActivity extends Activity {
                 public void onRouteSelected(MediaRouter router, int type, RouteInfo info) {
                     updatePresentation();
                 }
- 
                 /**
                  * The route has been unselected.
                  */
                 @Override
                 public void onRouteUnselected(MediaRouter router, int type, RouteInfo info) {
                     updatePresentation();
- 
                 }
- 
                 /**
                  * The route's presentation display has changed. This callback
                  * is called when the presentation has been activated, removed
@@ -130,7 +116,6 @@ public class MainActivity extends Activity {
                     updatePresentation();
                 }
             };
- 
     /**
      * Updates the displayed presentation to enable a secondary screen if it has
      * been selected in the {@link android.media.MediaRouter} for the
@@ -140,17 +125,14 @@ public class MainActivity extends Activity {
      * the secondary screen.
      */
     private void updatePresentation() {
- 
         // Get the selected route for live video
         RouteInfo selectedRoute = mMediaRouter.getSelectedRoute(
                 MediaRouter.ROUTE_TYPE_LIVE_VIDEO);
- 
         // Get its Display if a valid route has been selected
         Display selectedDisplay = null;
         if (selectedRoute != null) {
             selectedDisplay = selectedRoute.getPresentationDisplay();
         }
- 
         /*
          * Dismiss the current presentation if the display has changed or no new
          * route has been selected
@@ -161,17 +143,14 @@ public class MainActivity extends Activity {
             mButton.setEnabled(false);
             mTextStatus.setText(R.string.secondary_notconnected);
         }
- 
         /*
          * Show a new presentation if the previous one has been dismissed and a
          * route has been selected.
          */
         if (mPresentation == null && selectedDisplay != null) {
- 
             // Initialise a new Presentation for the Display
             mPresentation = new SamplePresentation(this, selectedDisplay);
             mPresentation.setOnDismissListener(mOnDismissListener);
- 
             // Try to show the presentation, this might fail if the display has
             // gone away in the mean time
             try {
@@ -185,43 +164,33 @@ public class MainActivity extends Activity {
                 mPresentation = null;
             }
         }
- 
     }
- 
     @Override
     protected void onResume() {
         super.onResume();
- 
         // Register a callback for all events related to live video devices
         mMediaRouter.addCallback(MediaRouter.ROUTE_TYPE_LIVE_VIDEO, mMediaRouterCallback);
- 
         // Show the 'Not connected' status message
         mButton.setEnabled(false);
         mTextStatus.setText(R.string.secondary_notconnected);
- 
         // Update the displays based on the currently active routes
         updatePresentation();
     }
- 
     @Override
     protected void onPause() {
         super.onPause();
- 
         // Stop listening for changes to media routes.
         mMediaRouter.removeCallback(mMediaRouterCallback);
     }
- 
     @Override
     protected void onStop() {
         super.onStop();
- 
         // Dismiss the presentation when the activity is not visible.
         if (mPresentation != null) {
             mPresentation.dismiss();
             mPresentation = null;
         }
     }
- 
     /**
      * Inflates the ActionBar or options menu. The menu file defines an item for
      * the {@link android.app.MediaRouteActionProvider}, which is registered here for all
@@ -230,18 +199,14 @@ public class MainActivity extends Activity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
- 
         getMenuInflater().inflate(R.menu.main, menu);
- 
         // Configure the media router action provider
         MenuItem mediaRouteMenuItem = menu.findItem(R.id.menu_media_route);
         MediaRouteActionProvider mediaRouteActionProvider =
                 (MediaRouteActionProvider) mediaRouteMenuItem.getActionProvider();
         mediaRouteActionProvider.setRouteTypes(MediaRouter.ROUTE_TYPE_LIVE_VIDEO);
- 
         return true;
     }
- 
     /**
      * Listens for dismissal of the {@link SamplePresentation} and removes its
      * reference.
@@ -255,16 +220,13 @@ public class MainActivity extends Activity {
                     }
                 }
             };
- 
     // Views used to display status information on the primary screen
     private TextView mTextStatus;
     private Button mButton;
- 
     // selected color index
- 
+    private int mColor = 0;
     // background colors
     public int[] mColors;
- 
     /**
      * Displays the next color on the secondary screen if it is activate.
      */
@@ -272,8 +234,7 @@ public class MainActivity extends Activity {
         if (mPresentation != null) {
             // a second screen is active and initialized, show the next color
             mPresentation.setColor(mColors[mColor]);
+            mColor = (mColor + 1) % mColors.length;
         }
     }
- 
 }
-  
